@@ -42,3 +42,9 @@ unsigned char int_to_uchar(int value) {
     if (value > 255) return 255;
     return static_cast<unsigned char>(value);
 }
+
+unsigned char double_to_uchar(double value) {
+    if (value < 0.0) return 0;
+    if (value > 255.0) return 255;
+    return static_cast<unsigned char>(floor(value));
+}
