@@ -37,6 +37,9 @@ std::map<std::string, int> parseVector(const std::vector<std::string>& args, int
 }
 
 
+//------------------------------------------------------------------------------------------------------------------
+
+
 unsigned char int_to_uchar(int value) {
     if (value < 0) return 0;
     if (value > 255) return 255;
@@ -47,4 +50,52 @@ unsigned char double_to_uchar(double value) {
     if (value < 0.0) return 0;
     if (value > 255.0) return 255;
     return static_cast<unsigned char>(floor(value));
+}
+
+double uchar_to_double(unsigned char value) {
+    return static_cast<double>(value);
+}
+
+
+//------------------------------------------------------------------------------------------------------------------
+
+
+// Convert int vector to complex vector
+std::vector<std::complex<double>> int_to_complex(const std::vector<int>& input) {
+    std::vector<std::complex<double>> result;
+    result.reserve(input.size());
+    for (int val : input) {
+        result.emplace_back(val, 0);
+    }
+    return result;
+}
+
+// Convert complex vector to int vector by taking norm and rounding down
+std::vector<int> complex_to_int(const std::vector<std::complex<double>>& input) {
+    std::vector<int> result;
+    result.reserve(input.size());
+    for (const std::complex<double>& val : input) {
+        result.push_back(val.real());
+    }
+    return result;
+}
+
+
+std::vector<std::complex<double>> double_to_complex(const std::vector<double>& input) {
+    std::vector<std::complex<double>> result;
+    result.reserve(input.size());
+    for (double val : input) {
+        result.emplace_back(val, 0);
+    }
+    return result;
+}
+
+// Convert complex vector to double vector
+std::vector<double> complex_to_double(const std::vector<std::complex<double>>& input) {
+    std::vector<double> result;
+    result.reserve(input.size());
+    for (const std::complex<double>& val : input) {
+        result.push_back(std::abs(val));
+    }
+    return result;
 }

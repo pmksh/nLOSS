@@ -100,9 +100,9 @@ bool loadBMP(const std::string& filename, ImageData& currentImage) {
             }
             
             // Convert BGR to RGB
-            currentImage.pixels[y][x][0] = bgr[2]; // Red
-            currentImage.pixels[y][x][1] = bgr[1]; // Green
-            currentImage.pixels[y][x][2] = bgr[0]; // Blue
+            currentImage.pixels[y][x][0] = uchar_to_double(bgr[2]); // Red
+            currentImage.pixels[y][x][1] = uchar_to_double(bgr[1]); // Green
+            currentImage.pixels[y][x][2] = uchar_to_double(bgr[0]); // Blue
         }
         
         // Skip padding bytes
@@ -168,9 +168,9 @@ bool saveBMP(const std::string& filename, ImageData& currentImage) {
             for (int x = 0; x < currentImage.width; x++) {
                 // Convert RGB to BGR
                 unsigned char bgr[3] = {
-                    int_to_uchar(currentImage.pixels[row][x][2]), // Blue
-                    int_to_uchar(currentImage.pixels[row][x][1]), // Green
-                    int_to_uchar(currentImage.pixels[row][x][0])  // Red
+                    double_to_uchar(currentImage.pixels[row][x][2]), // Blue
+                    double_to_uchar(currentImage.pixels[row][x][1]), // Green
+                    double_to_uchar(currentImage.pixels[row][x][0])  // Red
                 };
                 file.write(reinterpret_cast<const char*>(bgr), 3);
             }

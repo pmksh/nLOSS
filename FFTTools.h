@@ -1,7 +1,4 @@
 
-using Complex = std::complex<double>;
-const double PI = acos(-1.0);
-
 
 
 std::vector<Complex> fft(std::vector<Complex> a) {
@@ -113,43 +110,3 @@ std::vector<Complex> idft(std::vector<Complex> a) {
     return a;
 }
 
-
-// Convert int vector to complex vector
-std::vector<std::complex<double>> int_to_complex(const std::vector<int>& input) {
-    std::vector<std::complex<double>> result;
-    result.reserve(input.size());
-    for (int val : input) {
-        result.emplace_back(val, 0);
-    }
-    return result;
-}
-
-// Convert complex vector to int vector by taking norm and rounding down
-std::vector<int> complex_to_int(const std::vector<std::complex<double>>& input) {
-    std::vector<int> result;
-    result.reserve(input.size());
-    for (const std::complex<double>& val : input) {
-        result.push_back(val.real());
-    }
-    return result;
-}
-
-
-std::vector<std::complex<double>> double_to_complex(const std::vector<double>& input) {
-    std::vector<std::complex<double>> result;
-    result.reserve(input.size());
-    for (double val : input) {
-        result.emplace_back(val, 0);
-    }
-    return result;
-}
-
-// Convert complex vector to double vector
-std::vector<double> complex_to_int(const std::vector<std::complex<double>>& input) {
-    std::vector<double> result;
-    result.reserve(input.size());
-    for (const std::complex<double>& val : input) {
-        result.push_back(val.real());
-    }
-    return result;
-}
