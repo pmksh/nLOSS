@@ -1,0 +1,2 @@
+only cast into Unsigned char at the end when saving
+save as int
