@@ -35,3 +35,10 @@ std::map<std::string, int> parseVector(const std::vector<std::string>& args, int
 
     return catches;
 }
+
+
+unsigned char int_to_uchar(int value) {
+    if (value < 0) return 0;
+    if (value > 255) return 255;
+    return static_cast<unsigned char>(value);
+}

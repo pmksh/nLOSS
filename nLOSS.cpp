@@ -15,8 +15,8 @@
 #include <algorithm>
 
 #include "ImageData.h"
-#include "BmpTools.h"
 #include "Utils.h"
+#include "BmpTools.h"
 #include "FFTTools.h"
 
 class CLI {
@@ -226,16 +226,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(fft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(fft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(fft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(fft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(fft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(fft(int_to_complex(strip[2])));
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -248,16 +248,16 @@ private:
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(fft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(fft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(fft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(fft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(fft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(fft(int_to_complex(strip[2])));
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -291,16 +291,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(ifft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(ifft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(ifft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(ifft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(ifft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(ifft(int_to_complex(strip[2])));
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -313,16 +313,16 @@ private:
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(ifft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(ifft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(ifft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(ifft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(ifft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(ifft(int_to_complex(strip[2])));
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -356,16 +356,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(dft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(dft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(dft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(dft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(dft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(dft(int_to_complex(strip[2])));
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -378,16 +378,16 @@ private:
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(dft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(dft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(dft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(dft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(dft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(dft(int_to_complex(strip[2])));
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -421,16 +421,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(idft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(idft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(idft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(idft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(idft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(idft(int_to_complex(strip[2])));
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -443,16 +443,16 @@ private:
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<unsigned char> strip[3];
+                    std::vector<int> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_uchar(idft(uchar_to_complex(strip[0])));
-                    strip[1] = complex_to_uchar(idft(uchar_to_complex(strip[1])));
-                    strip[2] = complex_to_uchar(idft(uchar_to_complex(strip[2])));
+                    strip[0] = complex_to_int(idft(int_to_complex(strip[0])));
+                    strip[1] = complex_to_int(idft(int_to_complex(strip[1])));
+                    strip[2] = complex_to_int(idft(int_to_complex(strip[2])));
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];

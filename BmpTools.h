@@ -168,9 +168,9 @@ bool saveBMP(const std::string& filename, ImageData& currentImage) {
             for (int x = 0; x < currentImage.width; x++) {
                 // Convert RGB to BGR
                 unsigned char bgr[3] = {
-                    currentImage.pixels[row][x][2], // Blue
-                    currentImage.pixels[row][x][1], // Green
-                    currentImage.pixels[row][x][0]  // Red
+                    int_to_uchar(currentImage.pixels[row][x][2]), // Blue
+                    int_to_uchar(currentImage.pixels[row][x][1]), // Green
+                    int_to_uchar(currentImage.pixels[row][x][0])  // Red
                 };
                 file.write(reinterpret_cast<const char*>(bgr), 3);
             }

@@ -113,62 +113,23 @@ std::vector<Complex> idft(std::vector<Complex> a) {
     return a;
 }
 
-/*
-std::vector<unsigned char> dct(std::vector<std::complex<double>> a) {
-    int N = a.size();
-    
-    // Create extended sequence for DCT-II using DFT
-    std::vector<std::complex<double>> x(2 * N);
-    
-    // Fill the extended sequence: x[n] = a[n] for n=0..N-1, x[n] = a[2N-1-n] for n=N..2N-1
-    for (int n = 0; n < N; n++) {
-        x[n] = std::complex<double>(a[n], 0.0);
-        x[2 * N - 1 - n] = std::complex<double>(a[n], 0.0);
-    }
-    
-    // Compute DFT of the extended sequence
-    std::vector<std::complex<double>> X = dft(x);
-    
-    // Extract DCT coefficients and convert to unsigned char
-    std::vector<unsigned char> y(N);
-    for (int k = 0; k < N; k++) {
-        // DCT-II coefficient: Y[k] = 2 * Re(X[k] * e^(-iπk/2N))
-        double angle = -M_PI * k / (2.0 * N);
-        std::complex<double> w = std::complex<double>(std::cos(angle), std::sin(angle));
-        std::complex<double> temp = X[k] * w;
-        double dct_val = 2.0 * temp.real();
-        
-        // Apply scaling factor for k=0
-        if (k == 0) {
-            dct_val *= 0.5;
-        }
-        
-        // Convert to unsigned char with clamping
-        if (dct_val < 0.0) dct_val = 0.0;
-        if (dct_val > 255.0) dct_val = 255.0;
-        y[k] = static_cast<unsigned char>(dct_val + 0.5); // Round to nearest integer
-    }
-    
-    return y;
-}
-*/
 
-// Convert unsigned char vector to complex vector
-std::vector<std::complex<double>> uchar_to_complex(const std::vector<unsigned char>& input) {
+// Convert int vector to complex vector
+std::vector<std::complex<double>> int_to_complex(const std::vector<int>& input) {
     std::vector<std::complex<double>> result;
     result.reserve(input.size());
-    for (unsigned char val : input) {
+    for (int val : input) {
         result.emplace_back(val, 0);
     }
     return result;
 }
 
-// Convert complex vector to unsigned char vector by taking norm and rounding down
-std::vector<unsigned char> complex_to_uchar(const std::vector<std::complex<double>>& input) {
-    std::vector<unsigned char> result;
+// Convert complex vector to int vector by taking norm and rounding down
+std::vector<int> complex_to_int(const std::vector<std::complex<double>>& input) {
+    std::vector<int> result;
     result.reserve(input.size());
     for (const std::complex<double>& val : input) {
-        result.push_back(static_cast<unsigned char>(val.real()));
+        result.push_back(val.real());
     }
     return result;
 }
