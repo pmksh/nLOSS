@@ -56,6 +56,16 @@ double uchar_to_double(unsigned char value) {
     return static_cast<double>(value);
 }
 
+unsigned char complex_to_uchar(Complex value) {
+
+    if (value.real() < 0.0) return 0;
+    if (value.real() > 255.0) return 255;
+    return static_cast<unsigned char>(floor(value.real()));
+}
+
+Complex uchar_to_complex(unsigned char value) {
+    return Complex(static_cast<double>(value),0);
+}
 
 //------------------------------------------------------------------------------------------------------------------
 

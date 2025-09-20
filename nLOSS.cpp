@@ -102,9 +102,9 @@ private:
             
             for (int y = 0; y < img.height; y++) {
                 for (int x = 0; x < img.width; x++) {
-                    totalR += img.pixels[y][x][0];
-                    totalG += img.pixels[y][x][1];
-                    totalB += img.pixels[y][x][2];
+                    totalR += img.pixels[y][x][0].real();
+                    totalG += img.pixels[y][x][1].real();
+                    totalB += img.pixels[y][x][2].real();
                 }
             }
             
@@ -137,11 +137,12 @@ private:
             return;
         }
         
+        Complex c_255 = Complex(255,0);
         for (int y = 0; y < img.height; y++) {
             for (int x = 0; x < img.width; x++) {
-                img.pixels[y][x][0] = 255 - img.pixels[y][x][0]; // Invert Red
-                img.pixels[y][x][1] = 255 - img.pixels[y][x][1]; // Invert Green
-                img.pixels[y][x][2] = 255 - img.pixels[y][x][2]; // Invert Blue
+                img.pixels[y][x][0] = c_255 - img.pixels[y][x][0]; // Invert Red
+                img.pixels[y][x][1] = c_255 - img.pixels[y][x][1]; // Invert Green
+                img.pixels[y][x][2] = c_255 - img.pixels[y][x][2]; // Invert Blue
             }
         }
         
@@ -161,11 +162,10 @@ private:
         for (int y = 0; y < img.height; y++) {
             for (int x = 0; x < img.width; x++) {
                 // Calculate luminance
-                unsigned char gray = double_to_uchar(
-                    0.299 * img.pixels[y][x][0] + 
-                    0.587 * img.pixels[y][x][1] + 
-                    0.114 * img.pixels[y][x][2]
-                );
+                Complex gray =
+                    Complex(0.299,0) * img.pixels[y][x][0] + 
+                    Complex(0.587,0) * img.pixels[y][x][1] + 
+                    Complex(0.114,0) * img.pixels[y][x][2];
                 img.pixels[y][x][0] = gray;
                 img.pixels[y][x][1] = gray;
                 img.pixels[y][x][2] = gray;
@@ -210,6 +210,27 @@ private:
         }
     }
 
+    void handleAbs(const std::vector<std::string>& args) {
+        std::map<std::string, int> catches = parseVector(args, 0);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+        
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                img.pixels[y][x][0] = Complex(std::abs(img.pixels[y][x][0]),0);
+                img.pixels[y][x][1] = Complex(std::abs(img.pixels[y][x][1]),0);
+                img.pixels[y][x][2] = Complex(std::abs(img.pixels[y][x][2]),0);
+            }
+        }
+        
+        std::cout << "Taken absolute value" << std::endl;
+    }
+
     void handleFFT(const std::vector<std::string>& args) {
         std::map<std::string, int> catches = parseVector(args, 1);
         if (catches["failed"]) return;
@@ -229,16 +250,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(fft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(fft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(fft(double_to_complex(strip[2])));
+                    strip[0] = fft(strip[0]);
+                    strip[1] = fft(strip[1]);
+                    strip[2] = fft(strip[2]);
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -251,16 +272,16 @@ private:
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(fft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(fft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(fft(double_to_complex(strip[2])));
+                    strip[0] = fft(strip[0]);
+                    strip[1] = fft(strip[1]);
+                    strip[2] = fft(strip[2]);
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -269,7 +290,7 @@ private:
                     }
                 }   
             }
-            std::cout << "Image flipped vertically" << std::endl;
+            std::cout << "Image fourier transformed vertically" << std::endl;
         } else {
             std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
         }
@@ -294,16 +315,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(ifft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(ifft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(ifft(double_to_complex(strip[2])));
+                    strip[0] = ifft(strip[0]);
+                    strip[1] = ifft(strip[1]);
+                    strip[2] = ifft(strip[2]);
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -312,20 +333,20 @@ private:
                     }
                 }   
             }
-            std::cout << "Image fourier transformed horizontally" << std::endl;
+            std::cout << "Image inverse fourier transformed horizontally" << std::endl;
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(ifft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(ifft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(ifft(double_to_complex(strip[2])));
+                    strip[0] = ifft(strip[0]);
+                    strip[1] = ifft(strip[1]);
+                    strip[2] = ifft(strip[2]);
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -334,7 +355,7 @@ private:
                     }
                 }   
             }
-            std::cout << "Image flipped vertically" << std::endl;
+            std::cout << "Image inverse fourier transformed vertically" << std::endl;
         } else {
             std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
         }
@@ -359,16 +380,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(dft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(dft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(dft(double_to_complex(strip[2])));
+                    strip[0] = dft(strip[0]);
+                    strip[1] = dft(strip[1]);
+                    strip[2] = dft(strip[2]);
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -377,20 +398,20 @@ private:
                     }
                 }   
             }
-            std::cout << "Image fourier transformed horizontally" << std::endl;
+            std::cout << "Image discrete fourier transformed horizontally" << std::endl;
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(dft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(dft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(dft(double_to_complex(strip[2])));
+                    strip[0] = dft(strip[0]);
+                    strip[1] = dft(strip[1]);
+                    strip[2] = dft(strip[2]);
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -399,7 +420,7 @@ private:
                     }
                 }   
             }
-            std::cout << "Image flipped vertically" << std::endl;
+            std::cout << "Image discrete fourier transformed vertically" << std::endl;
         } else {
             std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
         }
@@ -424,16 +445,16 @@ private:
         if (direction == "horizontal" || direction == "h") {
             if (s == -1){
                 for (int x = 0; x < img.width; x++){
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int y = 0; y < img.height; y++) {
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(idft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(idft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(idft(double_to_complex(strip[2])));
+                    strip[0] = idft(strip[0]);
+                    strip[1] = idft(strip[1]);
+                    strip[2] = idft(strip[2]);
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -442,20 +463,20 @@ private:
                     }
                 }   
             }
-            std::cout << "Image fourier transformed horizontally" << std::endl;
+            std::cout << "Image inverse discrete fourier transformed horizontally" << std::endl;
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
-                    std::vector<double> strip[3];
+                    std::vector<Complex> strip[3];
                     for (int x = 0; x < img.width; x++){
                         strip[0].push_back(img.pixels[y][x][0]);
                         strip[1].push_back(img.pixels[y][x][1]);
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = complex_to_double(idft(double_to_complex(strip[0])));
-                    strip[1] = complex_to_double(idft(double_to_complex(strip[1])));
-                    strip[2] = complex_to_double(idft(double_to_complex(strip[2])));
+                    strip[0] = idft(strip[0]);
+                    strip[1] = idft(strip[1]);
+                    strip[2] = idft(strip[2]);
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -464,7 +485,7 @@ private:
                     }
                 }   
             }
-            std::cout << "Image flipped vertically" << std::endl;
+            std::cout << "Image inverse discrete fourier transformed vertically" << std::endl;
         } else {
             std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
         }
@@ -541,6 +562,12 @@ public:
             [this](const std::vector<std::string>& args) { handleFlip(args); },
             "Flip image horizontally or vertically",
             "flip [horizontal | vertical]"
+        );
+
+        registerCommand("abs", 
+            [this](const std::vector<std::string>& args) { handleAbs(args); },
+            "Replaces each pixel with absolute value",
+            "abs"
         );
 
         registerCommand("fft", 

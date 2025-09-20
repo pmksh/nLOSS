@@ -4,17 +4,17 @@
 struct ImageData {
     int width = 0;
     int height = 0;
-    std::vector<std::vector<std::vector<double>>> pixels; // [height][width][RGB]
+    std::vector<std::vector<std::vector<Complex>>> pixels; // [height][width][RGB]
     bool isLoaded = false;
     
     void allocate(int w, int h) {
         width = w;
         height = h;
-        pixels = std::vector<std::vector<std::vector<double>>>(
+        pixels = std::vector<std::vector<std::vector<Complex>>>(
             height, 
-            std::vector<std::vector<double>>(
+            std::vector<std::vector<Complex>>(
                 width, 
-                std::vector<double>(3, 0) // RGB values
+                std::vector<Complex>(3, 0) // RGB values
             )
         );
         isLoaded = true;

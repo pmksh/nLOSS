@@ -1,4 +1,4 @@
-
+// Transform tools
 
 
 std::vector<Complex> fft(std::vector<Complex> a) {
@@ -54,18 +54,15 @@ std::vector<Complex> fft(std::vector<Complex> a) {
 // Inverse FFT with zero padding
 std::vector<Complex> ifft(std::vector<Complex> a) {
     int original_n = a.size();
-    
-    // Conjugate input
+
     for (auto& x : a) {
         x = std::conj(x);
     }
     
-    // Forward FFT
     a = fft(a);
-    
-    // Conjugate and scale result
+
     for (auto& x : a) {
-        x = std::conj(x) / double(original_n);  // Scale by original size, not padded size
+        x = std::conj(x) / double(original_n);
     }
 
     return a;
@@ -75,17 +72,15 @@ std::vector<Complex> dft(std::vector<Complex> a) {
     int N = a.size();
     std::vector<std::complex<double>> X(N);
     
-    // For each output frequency bin k
+    
     for (int k = 0; k < N; k++) {
         X[k] = std::complex<double>(0.0, 0.0);
         
-        // Sum over all input samples n
         for (int n = 0; n < N; n++) {
             // Calculate the complex exponential: e^(-2πi*k*n/N)
             double angle = -2.0 * M_PI * k * n / N;
             std::complex<double> w = std::complex<double>(std::cos(angle), std::sin(angle));
             
-            // Accumulate the DFT sum
             X[k] += a[n] * w;
         }
     }
@@ -96,7 +91,6 @@ std::vector<Complex> dft(std::vector<Complex> a) {
 std::vector<Complex> idft(std::vector<Complex> a) {
     int N = a.size();
     
-    // Conjugate input
     for (auto& x : a) {
         x = std::conj(x);
     }

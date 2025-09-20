@@ -1,4 +1,5 @@
-only cast into Unsigned char at the end when saving
-save as complex double
 add two sided transform
 add coomplex functions
+WHT
+NTT
+DCT, DST
