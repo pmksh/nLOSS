@@ -245,7 +245,7 @@ private:
         }
 
         if(s == 0) {
-            std::cerr << "Error: Size not Given" << std::endl;
+            std::cerr << "Error: Size not given" << std::endl;
             return;
         }
         
@@ -260,6 +260,60 @@ private:
         std::cout << "Quantized" << std::endl;
     }
 
+    void handleCutoff(const std::vector<std::string>& args) {
+        std::map<std::string, int> catches = parseVector(args, 0);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+        int s = catches["-s"];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+
+        if(s == 0) {
+            std::cerr << "Error: Size not given" << std::endl;
+            return;
+        }
+        
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                img.pixels[y][x][0] = Cutoff(img.pixels[y][x][0], s);
+                img.pixels[y][x][1] = Cutoff(img.pixels[y][x][1], s);
+                img.pixels[y][x][2] = Cutoff(img.pixels[y][x][2], s);
+            }
+        }
+        
+        std::cout << "Cutoff Applied" << std::endl;
+    }
+
+    void handleFilter(const std::vector<std::string>& args, Complex (* filter)(double, double)) {
+        std::map<std::string, int> catches = parseVector(args, 0);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+        int s = catches["-s"];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+
+        if(s == 0) {
+            std::cerr << "Error: Size not given" << std::endl;
+            return;
+        }
+        
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                img.pixels[y][x][0] = img.pixels[y][x][0] * filter(x/img.height, y/(img.height));
+                img.pixels[y][x][1] = img.pixels[y][x][1] * filter(x/img.height, y/(img.height));
+                img.pixels[y][x][2] = img.pixels[y][x][2] * filter(x/img.height, y/(img.height));
+            }
+        }
+        
+        std::cout << "Cutoff Applied" << std::endl;
+    }
+
     void handleTransform(const std::vector<std::string>& args, TransformFunc func) {
         std::map<std::string, int> catches = parseVector(args, 1);
         if (catches["failed"]) return;
@@ -271,57 +325,79 @@ private:
         }
 
         std::string direction = "horizontal";
-        int s = -1;
         if (!args.empty()) {
             direction = args[0];
         }
+        int sx = catches["-sx"] ? catches["-sx"] : img.width;
+        int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        int tx = img.width / sx;
+        int ty = img.height / sy;
+        // std::cout << sx << sy << std::endl;
+
         
-        if (direction == "horizontal" || direction == "h") {
-            if (s == -1){
-                for (int x = 0; x < img.width; x++){
-                    std::vector<Complex> strip[3];
-                    for (int y = 0; y < img.height; y++) {
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
+        if (direction == "horizontal" || direction == "h" || direction == "double" || direction == "d") {
+            std::vector<Complex> strip_0(sy);
+            std::vector<Complex> strip_1(sy);
+            std::vector<Complex> strip_2(sy);
+            for(int x1 = 0 ; x1 < tx ; x1++){
+                for(int y1 = 0 ; y1 < ty ; y1++){
+                    for (int x = 0 ; x < sx; x++){
 
-                    strip[0] = func(strip[0]);
-                    strip[1] = func(strip[1]);
-                    strip[2] = func(strip[2]);
+                        int x2 = x1 * sx + x;
+                        for (int y = 0 ; y < sy; y++) {
+                            int y2 = y1 * sy + y;
+                            strip_0[y] = img.pixels[y2][x2][0];
+                            strip_1[y] = img.pixels[y2][x2][1];
+                            strip_2[y] = img.pixels[y2][x2][2];
+                        }
 
-                    for (int y = 0; y < img.height; y++) {
-                        img.pixels[y][x][0] = strip[0][y];
-                        img.pixels[y][x][1] = strip[1][y];
-                        img.pixels[y][x][2] = strip[2][y];
+                        strip_0 = func(strip_0);
+                        strip_1 = func(strip_1);
+                        strip_2 = func(strip_2);
+
+                        for (int y = 0 ; y < sy ; y++) {
+                            int y2 = y1 * sy + y;
+                            img.pixels[y2][x2][0] = strip_0[y];
+                            img.pixels[y2][x2][1] = strip_1[y];
+                            img.pixels[y2][x2][2] = strip_2[y];
+                        }
                     }
-                }   
+                }
             }
+
             std::cout << "Image transformed horizontally" << std::endl;
-        } else if (direction == "vertical" || direction == "v") {
-            if (s == -1){
-                for (int y = 0; y < img.height; y++) {
-                    std::vector<Complex> strip[3];
-                    for (int x = 0; x < img.width; x++){
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
+        } if (direction == "vertical" || direction == "v" || direction == "double" || direction == "d") {
+            std::vector<Complex> strip_0(sx);
+            std::vector<Complex> strip_1(sx);
+            std::vector<Complex> strip_2(sx);
+            for(int x1 = 0 ; x1 < tx ; x1++){
+                for(int y1 = 0 ; y1 < ty ; y1++){
+                    for (int y = 0 ; y < sy; y++){
 
-                    strip[0] = func(strip[0]);
-                    strip[1] = func(strip[1]);
-                    strip[2] = func(strip[2]);
+                        int y2 = y1 * sy + y;
+                        for (int x = 0 ; x < sx ; x++) {
+                            int x2 = x1 * sx + x;
+                            strip_0[x] = img.pixels[y2][x2][0];
+                            strip_1[x] = img.pixels[y2][x2][1];
+                            strip_2[x] = img.pixels[y2][x2][2];
+                        }
 
-                    for (int x = 0; x < img.width; x++){
-                        img.pixels[y][x][0] = strip[0][x];
-                        img.pixels[y][x][1] = strip[1][x];
-                        img.pixels[y][x][2] = strip[2][x];
+                        strip_0 = func(strip_0);
+                        strip_1 = func(strip_1);
+                        strip_2 = func(strip_2);
+
+                        for (int x = 0 ; x < sx ; x++) {
+                            int x2 = x1 * sx + x;
+                            img.pixels[y2][x2][0] = strip_0[x];
+                            img.pixels[y2][x2][1] = strip_1[x];
+                            img.pixels[y2][x2][2] = strip_2[x];
+                        }
                     }
-                }   
+                }
             }
             std::cout << "Image transformed vertically" << std::endl;
         } else {
-            std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
+            std::cerr << "Error: Invalid direction. Use 'double', 'horizontal' or 'vertical'" << std::endl;
         }
     }
     
@@ -410,6 +486,12 @@ public:
             "quant -s [int]"
         );
 
+        registerCommand("cutoff", 
+            [this](const std::vector<std::string>& args) { handleCutoff(args); },
+            "Replaces value with 0 if absolute value is less than s",
+            "cutoff -s [int]"
+        );
+
         registerCommand("fft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, fft); },
             "Fourier Transforms image horizontally or vertically",
@@ -434,16 +516,40 @@ public:
             "idft [horizontal | vertical]"
         );
 
-        registerCommand("dct2", 
+        registerCommand("dct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dct2); },
             "Cosine Transforms real part of image horizontally or vertically",
-            "dct2 [horizontal | vertical]"
+            "dct [horizontal | vertical]"
         );
 
-        registerCommand("idct2", 
+        registerCommand("idct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idct2); },
             "Inverse Cosine Transforms real part of image horizontally or vertically",
-            "idct2 [horizontal | vertical]"
+            "idct [horizontal | vertical]"
+        );
+
+        registerCommand("dst", 
+            [this](const std::vector<std::string>& args) { handleTransform(args, dst2); },
+            "Sine Transforms real part of image horizontally or vertically",
+            "dst [horizontal | vertical]"
+        );
+
+        registerCommand("idst", 
+            [this](const std::vector<std::string>& args) { handleTransform(args, idst2); },
+            "Inverse Sine Transforms real part of image horizontally or vertically",
+            "idst [horizontal | vertical]"
+        );
+
+        registerCommand("wht", 
+            [this](const std::vector<std::string>& args) { handleTransform(args, wht); },
+            "Walsh-Hadamard Transforms image horizontally or vertically",
+            "wht [horizontal | vertical]"
+        );
+
+        registerCommand("iwht", 
+            [this](const std::vector<std::string>& args) { handleTransform(args, iwht); },
+            "Inverse Walsh-Hadamard Transforms image horizontally or vertically",
+            "iwht [horizontal | vertical]"
         );
     }
     

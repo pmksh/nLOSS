@@ -1,5 +1,3 @@
-add two sided transform
-add coomplex functions
-WHT
+add complex functions
 NTT
-DST
+fix edges

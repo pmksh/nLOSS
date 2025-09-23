@@ -131,7 +131,7 @@ std::vector<Complex> dct2(const std::vector<Complex> a) {
 }
 */
 
-
+// Direct DCT-II implementation
 std::vector<Complex> dct2(const std::vector<Complex> a) {
     const int N = static_cast<int>(a.size());
     std::vector<Complex> result(N);
@@ -158,6 +158,111 @@ std::vector<Complex> idct2(const std::vector<Complex> a) {
             sum += a[k].real() * std::cos(PI * (n + 0.5) * k / N);
         }
         result[n] = Complex(2 * sum / N, 0.0);  // wrap result as Complex
+    }
+
+    return result;
+}
+
+
+// Direct DST-II implementation
+std::vector<Complex> dst2(const std::vector<Complex> a) {
+    const int N = static_cast<int>(a.size());
+    std::vector<Complex> result(N);
+
+    for (int k = 0; k < N; k++) {
+        double sum = 0.0;
+        for (int n = 0; n < N; n++) {
+            sum += a[n].real() * std::sin(PI * (n + 1) * (k + 1) / N);
+        }
+        result[k] = Complex(sum, 0.0);  // wrap as Complex
+    }
+
+    return result;
+}
+
+
+// Inverse DST-II (DST-III)
+std::vector<Complex> idst2(const std::vector<Complex> a) {
+    const int N = static_cast<int>(a.size());
+    std::vector<Complex> result(N);
+
+    for (int n = 0; n < N; n++) {
+        double sum = 0;
+        for (int k = 0; k < N; k++) {
+            sum += a[k].real() * std::sin(PI * (n + 1) * (k + 1) / N);
+        }
+        result[n] = Complex(2 * sum / (N + 1), 0.0);  // wrap result as Complex
+    }
+
+    return result;
+}
+
+
+
+
+std::vector<Complex> wht(std::vector<Complex> a) {
+    int N = static_cast<int>(a.size());
+    int M = 1;
+    while (M < N) {
+        M <<= 1;
+    }
+
+    // pad with zeroes
+    std::vector<Complex> b(M, Complex(0.0, 0.0));
+    for (int i = 0; i < N; i++) {
+        b[i] = a[i];
+    }
+
+    // Step 2: transform
+    for (int len = 1; len < M; len <<= 1) {
+        for (int i = 0; i < M; i += (len << 1)) {
+            for (int j = 0; j < len; j++) {
+                Complex u = b[i + j];
+                Complex v = b[i + j + len];
+                b[i + j]       = u + v;
+                b[i + j + len] = u - v;
+            }
+        }
+    }
+
+    // cut
+    std::vector<Complex> result(N);
+    for (int i = 0; i < N; i++) {
+        result[i] = b[i];
+    }
+
+    return result;
+}
+
+std::vector<Complex> iwht(std::vector<Complex> a) {
+    int N = static_cast<int>(a.size());
+    int M = 1;
+    while (M < N) {
+        M <<= 1;
+    }
+
+    // pad with zeroes
+    std::vector<Complex> b(M, Complex(0.0, 0.0));
+    for (int i = 0; i < N; i++) {
+        b[i] = a[i];
+    }
+
+    // Step 2: transform
+    for (int len = 1; len < M; len <<= 1) {
+        for (int i = 0; i < M; i += (len << 1)) {
+            for (int j = 0; j < len; j++) {
+                Complex u = b[i + j];
+                Complex v = b[i + j + len];
+                b[i + j]       = u + v;
+                b[i + j + len] = u - v;
+            }
+        }
+    }
+
+    // cut
+    std::vector<Complex> result(N);
+    for (int i = 0; i < N; i++) {
+        result[i] = b[i] / Complex(M,0);
     }
 
     return result;
