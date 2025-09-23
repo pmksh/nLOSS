@@ -15,12 +15,14 @@
 #include <algorithm>
 
 using Complex = std::complex<double>;
+using TransformFunc = std::vector<Complex>(*)(std::vector<Complex>);
 const double PI = acos(-1.0);
 
 #include "ImageData.h"
 #include "Utils.h"
 #include "BmpTools.h"
 #include "FFTTools.h"
+#include "FuncTools.h"
 
 class CLI {
 private:
@@ -231,72 +233,34 @@ private:
         std::cout << "Taken absolute value" << std::endl;
     }
 
-    void handleFFT(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 1);
+    void handleQuantize(const std::vector<std::string>& args) {
+        std::map<std::string, int> catches = parseVector(args, 0);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
+        int s = catches["-s"];
 
         if (!img.isLoaded) {
             std::cerr << "Error: No image loaded" << std::endl;
             return;
         }
 
-        std::string direction = "horizontal";
-        int s = -1;
-        if (!args.empty()) {
-            direction = args[0];
+        if(s == 0) {
+            std::cerr << "Error: Size not Given" << std::endl;
+            return;
         }
         
-        if (direction == "horizontal" || direction == "h") {
-            if (s == -1){
-                for (int x = 0; x < img.width; x++){
-                    std::vector<Complex> strip[3];
-                    for (int y = 0; y < img.height; y++) {
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
-
-                    strip[0] = fft(strip[0]);
-                    strip[1] = fft(strip[1]);
-                    strip[2] = fft(strip[2]);
-
-                    for (int y = 0; y < img.height; y++) {
-                        img.pixels[y][x][0] = strip[0][y];
-                        img.pixels[y][x][1] = strip[1][y];
-                        img.pixels[y][x][2] = strip[2][y];
-                    }
-                }   
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                img.pixels[y][x][0] = Quantize(img.pixels[y][x][0], s);
+                img.pixels[y][x][1] = Quantize(img.pixels[y][x][1], s);
+                img.pixels[y][x][2] = Quantize(img.pixels[y][x][2], s);
             }
-            std::cout << "Image fourier transformed horizontally" << std::endl;
-        } else if (direction == "vertical" || direction == "v") {
-            if (s == -1){
-                for (int y = 0; y < img.height; y++) {
-                    std::vector<Complex> strip[3];
-                    for (int x = 0; x < img.width; x++){
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
-
-                    strip[0] = fft(strip[0]);
-                    strip[1] = fft(strip[1]);
-                    strip[2] = fft(strip[2]);
-
-                    for (int x = 0; x < img.width; x++){
-                        img.pixels[y][x][0] = strip[0][x];
-                        img.pixels[y][x][1] = strip[1][x];
-                        img.pixels[y][x][2] = strip[2][x];
-                    }
-                }   
-            }
-            std::cout << "Image fourier transformed vertically" << std::endl;
-        } else {
-            std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
         }
+        
+        std::cout << "Quantized" << std::endl;
     }
 
-    void handleIFFT(const std::vector<std::string>& args) {
+    void handleTransform(const std::vector<std::string>& args, TransformFunc func) {
         std::map<std::string, int> catches = parseVector(args, 1);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
@@ -322,9 +286,9 @@ private:
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = ifft(strip[0]);
-                    strip[1] = ifft(strip[1]);
-                    strip[2] = ifft(strip[2]);
+                    strip[0] = func(strip[0]);
+                    strip[1] = func(strip[1]);
+                    strip[2] = func(strip[2]);
 
                     for (int y = 0; y < img.height; y++) {
                         img.pixels[y][x][0] = strip[0][y];
@@ -333,7 +297,7 @@ private:
                     }
                 }   
             }
-            std::cout << "Image inverse fourier transformed horizontally" << std::endl;
+            std::cout << "Image transformed horizontally" << std::endl;
         } else if (direction == "vertical" || direction == "v") {
             if (s == -1){
                 for (int y = 0; y < img.height; y++) {
@@ -344,9 +308,9 @@ private:
                         strip[2].push_back(img.pixels[y][x][2]);
                     }
 
-                    strip[0] = ifft(strip[0]);
-                    strip[1] = ifft(strip[1]);
-                    strip[2] = ifft(strip[2]);
+                    strip[0] = func(strip[0]);
+                    strip[1] = func(strip[1]);
+                    strip[2] = func(strip[2]);
 
                     for (int x = 0; x < img.width; x++){
                         img.pixels[y][x][0] = strip[0][x];
@@ -355,137 +319,7 @@ private:
                     }
                 }   
             }
-            std::cout << "Image inverse fourier transformed vertically" << std::endl;
-        } else {
-            std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
-        }
-    }
-
-    void handleDFT(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 1);
-        if (catches["failed"]) return;
-        ImageData& img = currentImage[catches["-n"]];
-
-        if (!img.isLoaded) {
-            std::cerr << "Error: No image loaded" << std::endl;
-            return;
-        }
-
-        std::string direction = "horizontal";
-        int s = -1;
-        if (!args.empty()) {
-            direction = args[0];
-        }
-        
-        if (direction == "horizontal" || direction == "h") {
-            if (s == -1){
-                for (int x = 0; x < img.width; x++){
-                    std::vector<Complex> strip[3];
-                    for (int y = 0; y < img.height; y++) {
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
-
-                    strip[0] = dft(strip[0]);
-                    strip[1] = dft(strip[1]);
-                    strip[2] = dft(strip[2]);
-
-                    for (int y = 0; y < img.height; y++) {
-                        img.pixels[y][x][0] = strip[0][y];
-                        img.pixels[y][x][1] = strip[1][y];
-                        img.pixels[y][x][2] = strip[2][y];
-                    }
-                }   
-            }
-            std::cout << "Image discrete fourier transformed horizontally" << std::endl;
-        } else if (direction == "vertical" || direction == "v") {
-            if (s == -1){
-                for (int y = 0; y < img.height; y++) {
-                    std::vector<Complex> strip[3];
-                    for (int x = 0; x < img.width; x++){
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
-
-                    strip[0] = dft(strip[0]);
-                    strip[1] = dft(strip[1]);
-                    strip[2] = dft(strip[2]);
-
-                    for (int x = 0; x < img.width; x++){
-                        img.pixels[y][x][0] = strip[0][x];
-                        img.pixels[y][x][1] = strip[1][x];
-                        img.pixels[y][x][2] = strip[2][x];
-                    }
-                }   
-            }
-            std::cout << "Image discrete fourier transformed vertically" << std::endl;
-        } else {
-            std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
-        }
-    }
-
-    void handleIDFT(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 1);
-        if (catches["failed"]) return;
-        ImageData& img = currentImage[catches["-n"]];
-
-        if (!img.isLoaded) {
-            std::cerr << "Error: No image loaded" << std::endl;
-            return;
-        }
-
-        std::string direction = "horizontal";
-        int s = -1;
-        if (!args.empty()) {
-            direction = args[0];
-        }
-        
-        if (direction == "horizontal" || direction == "h") {
-            if (s == -1){
-                for (int x = 0; x < img.width; x++){
-                    std::vector<Complex> strip[3];
-                    for (int y = 0; y < img.height; y++) {
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
-
-                    strip[0] = idft(strip[0]);
-                    strip[1] = idft(strip[1]);
-                    strip[2] = idft(strip[2]);
-
-                    for (int y = 0; y < img.height; y++) {
-                        img.pixels[y][x][0] = strip[0][y];
-                        img.pixels[y][x][1] = strip[1][y];
-                        img.pixels[y][x][2] = strip[2][y];
-                    }
-                }   
-            }
-            std::cout << "Image inverse discrete fourier transformed horizontally" << std::endl;
-        } else if (direction == "vertical" || direction == "v") {
-            if (s == -1){
-                for (int y = 0; y < img.height; y++) {
-                    std::vector<Complex> strip[3];
-                    for (int x = 0; x < img.width; x++){
-                        strip[0].push_back(img.pixels[y][x][0]);
-                        strip[1].push_back(img.pixels[y][x][1]);
-                        strip[2].push_back(img.pixels[y][x][2]);
-                    }
-
-                    strip[0] = idft(strip[0]);
-                    strip[1] = idft(strip[1]);
-                    strip[2] = idft(strip[2]);
-
-                    for (int x = 0; x < img.width; x++){
-                        img.pixels[y][x][0] = strip[0][x];
-                        img.pixels[y][x][1] = strip[1][x];
-                        img.pixels[y][x][2] = strip[2][x];
-                    }
-                }   
-            }
-            std::cout << "Image inverse discrete fourier transformed vertically" << std::endl;
+            std::cout << "Image transformed vertically" << std::endl;
         } else {
             std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
         }
@@ -570,28 +404,46 @@ public:
             "abs"
         );
 
+        registerCommand("quant", 
+            [this](const std::vector<std::string>& args) { handleQuantize(args); },
+            "Replaces each pixel with absolute value",
+            "quant -s [int]"
+        );
+
         registerCommand("fft", 
-            [this](const std::vector<std::string>& args) { handleFFT(args); },
+            [this](const std::vector<std::string>& args) { handleTransform(args, fft); },
             "Fourier Transforms image horizontally or vertically",
             "fft [horizontal | vertical]"
         );
 
         registerCommand("ifft", 
-            [this](const std::vector<std::string>& args) { handleIFFT(args); },
+            [this](const std::vector<std::string>& args) { handleTransform(args, ifft); },
             "Inverse Fourier Transforms image horizontally or vertically",
             "ifft [horizontal | vertical]"
         );
 
         registerCommand("dft", 
-            [this](const std::vector<std::string>& args) { handleDFT(args); },
+            [this](const std::vector<std::string>& args) { handleTransform(args, dft); },
             "Fourier Transforms image horizontally or vertically",
             "dft [horizontal | vertical]"
         );
 
         registerCommand("idft", 
-            [this](const std::vector<std::string>& args) { handleIDFT(args); },
+            [this](const std::vector<std::string>& args) { handleTransform(args, idft); },
             "Inverse Fourier Transforms image horizontally or vertically",
             "idft [horizontal | vertical]"
+        );
+
+        registerCommand("dct2", 
+            [this](const std::vector<std::string>& args) { handleTransform(args, dct2); },
+            "Cosine Transforms real part of image horizontally or vertically",
+            "dct2 [horizontal | vertical]"
+        );
+
+        registerCommand("idct2", 
+            [this](const std::vector<std::string>& args) { handleTransform(args, idct2); },
+            "Inverse Cosine Transforms real part of image horizontally or vertically",
+            "idct2 [horizontal | vertical]"
         );
     }
     

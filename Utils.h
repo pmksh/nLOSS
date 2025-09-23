@@ -15,7 +15,7 @@ std::optional<int> toInt(const std::string& s) {
 // Parse global flags
 std::map<std::string, int> parseVector(const std::vector<std::string>& args, int start){
 
-    std::map<std::string, int> catches = {{"failed", 0}, {"-n", 0}, {"-fr", 0}};
+    std::map<std::string, int> catches = {{"failed", 0}, {"-n", 0}, {"-s", 0}, {"-fr", 0}};
 
     for (int i = start; i < args.size(); ++i) {
         if (args[i] == "-n") {
@@ -24,6 +24,16 @@ std::map<std::string, int> parseVector(const std::vector<std::string>& args, int
                 if(*val <= 15) catches["-n"] = *val;
             } else {
                 std::cout << "Error: -n must be followed by a number";
+                catches["failed"] = 1;
+                return catches;
+            }
+        }
+        else if (args[i] == "-s") {
+            i++;
+            if (auto val = toInt(args[i])) {
+                if(*val > 0) catches["-s"] = *val;
+            } else {
+                std::cout << "Error: -s must be followed by a number";
                 catches["failed"] = 1;
                 return catches;
             }
