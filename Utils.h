@@ -139,3 +139,36 @@ std::vector<double> complex_to_double(const std::vector<std::complex<double>>& i
     }
     return result;
 }
+
+// -----------------------------------------------------------------------------------------------
+
+void levelHelper(ImageData& img, int x_s, int y_s, int x_l, int y_l){
+
+    Complex sum_0 = Complex(0,0);
+    Complex sum_1 = Complex(0,0);
+    Complex sum_2 = Complex(0,0);
+
+    for (int y = 0 ; y < y_l; y++) {
+        for (int x = 0 ; x < x_l; x++) {
+            int y2 = y_s + y;
+            int x2 = x_s + x;
+            sum_0 += img.pixels[y2][x2][0];
+            sum_1 += img.pixels[y2][x2][1];
+            sum_2 += img.pixels[y2][x2][2];
+        }
+    }
+
+    sum_0 /= Complex(x_l * y_l, 0);
+    sum_1 /= Complex(x_l * y_l, 0);
+    sum_2 /= Complex(x_l * y_l, 0);
+
+    for (int y = 0 ; y < y_l; y++) {
+        for (int x = 0 ; x < x_l; x++) {
+            int y2 = y_s + y;
+            int x2 = x_s + x;
+            img.pixels[y2][x2][0] = sum_0;
+            img.pixels[y2][x2][1] = sum_1;
+            img.pixels[y2][x2][2] = sum_2;
+        }
+    }
+}
