@@ -4,3 +4,4 @@ maybe check that weird wrong dst (+1 -> +0.5)
 add log
 add batch processing
 error handling
+Write manual

@@ -30,13 +30,16 @@ private:
         std::function<void(const std::vector<std::string>&)> handler;
         std::string description;
         std::string usage;
+        // std::string flags;
     };
     
-    std::map<std::string, Command> commands;
-    bool running;
-    ImageData currentImage[16]; // Store the current loaded image
+    std::map<std::string, Command> commands;    // Array of commands
+    bool running;                               // Is running
+    ImageData currentImage[16];                 // Store the current loaded image
     
     // Command handlers
+
+    // Handles loading .bmp files
     void handleLoad(const std::vector<std::string>& args) {
         if (args.empty()) {
             std::cerr << "Error: Please specify a filename to load" << std::endl;
@@ -45,7 +48,8 @@ private:
         }
         
         std::string filename = args[0];
-        std::map<std::string, int> catches = parseVector(args, 1);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
         
@@ -58,6 +62,7 @@ private:
         }
     }
     
+    // handles saving .bmp files
     void handleSave(const std::vector<std::string>& args) {
         if (args.empty()) {
             std::cerr << "Error: Please specify a filename to save" << std::endl;
@@ -66,7 +71,8 @@ private:
         }
         
         std::string filename = args[0];
-        std::map<std::string, int> catches = parseVector(args, 1);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
         
@@ -75,11 +81,13 @@ private:
         }
     }
     
+    // Exit the Program
     void handleExit(const std::vector<std::string>& args) {
         std::cout << "Goodbye!" << std::endl;
         running = false;
     }
     
+    // Usage guide 
     void handleHelp(const std::vector<std::string>& args) {
         std::cout << "Available commands:" << std::endl;
         for (const auto& [name, cmd] : commands) {
@@ -88,11 +96,18 @@ private:
                 std::cout << "    Usage: " << cmd.usage << std::endl;
             }
         }
+        std::cout << "\nFlag guide:" << std::endl;
+        std::cout << "-n :: choose one of 16 (0 - 15) image slots for  command (default = 0)" << std::endl;
+        std::cout << "-s :: input mandatory size parameter for command (no default)" << std::endl;
+        std::cout << "-sx :: input x-size parameter for command (default = img.width)" << std::endl;
+        std::cout << "-sy :: input y-size parameter for command (default = img.height)" << std::endl;
+
         std::cout << "\nSupported format: 24-bit uncompressed BMP files" << std::endl;
     }
     
     void handleInfo(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -130,7 +145,8 @@ private:
     }
 
     void handleInvert(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
         
@@ -152,7 +168,8 @@ private:
     }
     
     void handleGrayscale(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -178,7 +195,8 @@ private:
     }
     
     void handleFlip(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 1);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -213,7 +231,8 @@ private:
     }
 
     void handleAbs(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -234,7 +253,8 @@ private:
     }
 
     void handleQuantize(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
         int s = catches["-s"];
@@ -261,7 +281,8 @@ private:
     }
 
     void handleCutoff(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
         int s = catches["-s"];
@@ -288,7 +309,8 @@ private:
     }
 
     void handleFilter(const std::vector<std::string>& args, Complex (* filter)(double, double)) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
         int s = catches["-s"];
@@ -315,7 +337,8 @@ private:
     }
 
     void handleLevel(const std::vector<std::string>& args) {
-        std::map<std::string, int> catches = parseVector(args, 0);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -350,13 +373,13 @@ private:
         }
         if(ry > 0 && rx > 0){
             levelHelper(img, tx * sx, ty * sy, rx, ry);
-
         }
         std::cout << "Image Levelled" << std::endl;
     }
 
     void handleTransform(const std::vector<std::string>& args, TransformFunc func) {
-        std::map<std::string, int> catches = parseVector(args, 1);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -377,8 +400,11 @@ private:
         int ry = img.height % sy;
         // std::cout << sx << sy << std::endl;
 
+        bool flag = false;
+
         
         if (direction == "h" || direction == "d") {
+            flag = true;
 
             std::vector<Complex> strip_0(sy);
             std::vector<Complex> strip_1(sy);
@@ -432,9 +458,8 @@ private:
 
                 }
             }
-
-            std::cout << "Image transformed horizontally" << std::endl;
         } if (direction == "v" || direction == "d") {
+            flag = true;
 
             std::vector<Complex> strip_0(sx);
             std::vector<Complex> strip_1(sx);
@@ -488,11 +513,15 @@ private:
 
                 }
             }
-            std::cout << "Image transformed vertically" << std::endl;
         }
-        // else {
-        //     std::cerr << "Error: Invalid direction. Use 'double', 'horizontal' or 'vertical'" << std::endl;
-        // }
+        if (!flag) {
+            std::cerr << "Error: Invalid direction. Use 'd', 'h' or 'v'" << std::endl;
+        }
+        else {
+            if ( direction == "v") std::cout << "Image transformed along vertical axis" << std::endl;
+            if ( direction == "h") std::cout << "Image transformed along horizontal axis" << std::endl;
+            if ( direction == "d") std::cout << "Image transformed along both axes" << std::endl;
+        }
     }
     
     // Parse command line into command and arguments
@@ -595,61 +624,61 @@ public:
         registerCommand("fft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, fft); },
             "Fourier Transforms image horizontally or vertically",
-            "fft [horizontal | vertical]"
+            "fft [h | v | d]"
         );
 
         registerCommand("ifft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, ifft); },
             "Inverse Fourier Transforms image horizontally or vertically",
-            "ifft [horizontal | vertical]"
+            "ifft [h | v | d]"
         );
 
         registerCommand("dft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dft); },
             "Fourier Transforms image horizontally or vertically",
-            "dft [horizontal | vertical]"
+            "dft [h | v | d]"
         );
 
         registerCommand("idft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idft); },
             "Inverse Fourier Transforms image horizontally or vertically",
-            "idft [horizontal | vertical]"
+            "idft [h | v | d]"
         );
 
         registerCommand("dct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dct2); },
             "Cosine Transforms real part of image horizontally or vertically",
-            "dct [horizontal | vertical]"
+            "dct [h | v | d]"
         );
 
         registerCommand("idct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idct2); },
             "Inverse Cosine Transforms real part of image horizontally or vertically",
-            "idct [horizontal | vertical]"
+            "idct [h | v | d]"
         );
 
         registerCommand("dst", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dst2); },
             "Sine Transforms real part of image horizontally or vertically",
-            "dst [horizontal | vertical]"
+            "dst [h | v | d]"
         );
 
         registerCommand("idst", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idst2); },
             "Inverse Sine Transforms real part of image horizontally or vertically",
-            "idst [horizontal | vertical]"
+            "idst [h | v | d]"
         );
 
         registerCommand("wht", 
             [this](const std::vector<std::string>& args) { handleTransform(args, wht); },
             "Walsh-Hadamard Transforms image horizontally or vertically",
-            "wht [horizontal | vertical]"
+            "wht [h | v | d]"
         );
 
         registerCommand("iwht", 
             [this](const std::vector<std::string>& args) { handleTransform(args, iwht); },
             "Inverse Walsh-Hadamard Transforms image horizontally or vertically",
-            "iwht [horizontal | vertical]"
+            "iwht [h | v | d]"
         );
     }
     
@@ -663,9 +692,8 @@ public:
     
     // Main CLI loop
     void run() {
-        std::cout << "Image Processing CLI Started. Type 'help' for available commands." << std::endl;
+        std::cout << "nLoss++ Started. Type 'help' for available commands." << std::endl;
         std::cout << "Supported format: 24-bit uncompressed BMP files" << std::endl;
-        std::cout << "Try 'create' to make a test image, then 'save test.bmp' to save it." << std::endl;
         
         while (running) {
             std::cout << "> ";
