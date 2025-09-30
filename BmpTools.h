@@ -25,8 +25,8 @@ struct BMPInfoHeader {
 #pragma pack(pop)
 
 int calculateRowPadding(int width) {
-        int bytesPerRow = width * 3; // 3 bytes per pixel (RGB)
-        int padding = (4 - (bytesPerRow % 4)) % 4; // BMP rows must be multiple of 4 bytes
+        int bytesPerRow = width * 3;                // 3 bytes per pixel (RGB)
+        int padding = (4 - (bytesPerRow % 4)) % 4;  // BMP rows must be multiple of 4 bytes
         return padding;
     }
 

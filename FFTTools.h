@@ -1,6 +1,7 @@
 // Transform tools
 
 
+// FFT with zero padding O(nlog(n))
 std::vector<Complex> fft(std::vector<Complex> a) {
     int original_n = a.size();
     if (original_n <= 1) return a;
@@ -51,7 +52,7 @@ std::vector<Complex> fft(std::vector<Complex> a) {
     return a;
 }
 
-// Inverse FFT with zero padding
+// Inverse FFT with zero padding O(nlog(n))
 std::vector<Complex> ifft(std::vector<Complex> a) {
     int original_n = a.size();
 
@@ -68,6 +69,8 @@ std::vector<Complex> ifft(std::vector<Complex> a) {
     return a;
 }
 
+
+// DFT implementation O(n^2)
 std::vector<Complex> dft(std::vector<Complex> a) {
     int N = a.size();
     std::vector<std::complex<double>> X(N);
@@ -88,6 +91,7 @@ std::vector<Complex> dft(std::vector<Complex> a) {
     return X;
 }
 
+// Inverse DFT implementation O(n^2)
 std::vector<Complex> idft(std::vector<Complex> a) {
     int N = a.size();
     
@@ -103,35 +107,8 @@ std::vector<Complex> idft(std::vector<Complex> a) {
 
     return a;
 }
-/*
-std::vector<Complex> dct2(const std::vector<Complex> a) {
-    const int N = static_cast<int>(a.size());
-    const int M = 2 * N;
 
-    // Step 1: Create symmetric sequence
-    std::vector<Complex> extended(M);
-    for (int i = 0; i < N; i++) {
-        extended[i] = a[i].real();
-        extended[M - 1 - i] = a[i].real();
-    }
-
-    // Step 2: Compute DFT of extended sequence
-    std::vector<Complex> A = dft(extended);
-
-    // Step 3: Extract DCT-II values
-    std::vector<Complex> result(N);
-    const double factor = M_PI / (2.0 * N);
-
-    for (int k = 0; k < N; k++) {
-        Complex phase = std::exp(Complex(0.0, -factor * k));
-        result[k] = (A[k] * phase).real();
-    }
-
-    return result;
-}
-*/
-
-// Direct DCT-II implementation
+// DCT-II implementation O(n^2)
 std::vector<Complex> dct2(const std::vector<Complex> a) {
     const int N = static_cast<int>(a.size());
     std::vector<Complex> result(N);
@@ -147,7 +124,7 @@ std::vector<Complex> dct2(const std::vector<Complex> a) {
     return result;
 }
 
-// Inverse DCT-II (DCT-III) returning Complex values
+// Inverse DCT-II (DCT-III) O(n^2)
 std::vector<Complex> idct2(const std::vector<Complex> a) {
     const int N = static_cast<int>(a.size());
     std::vector<Complex> result(N);
@@ -164,7 +141,7 @@ std::vector<Complex> idct2(const std::vector<Complex> a) {
 }
 
 
-// Direct DST-II implementation
+// DST-II implementation O(n^2)
 std::vector<Complex> dst2(const std::vector<Complex> a) {
     const int N = static_cast<int>(a.size());
     std::vector<Complex> result(N);
@@ -181,7 +158,7 @@ std::vector<Complex> dst2(const std::vector<Complex> a) {
 }
 
 
-// Inverse DST-II (DST-III)
+// Inverse DST-II (DST-III) O(n^2)
 std::vector<Complex> idst2(const std::vector<Complex> a) {
     const int N = static_cast<int>(a.size());
     std::vector<Complex> result(N);
@@ -197,9 +174,7 @@ std::vector<Complex> idst2(const std::vector<Complex> a) {
     return result;
 }
 
-
-
-
+// WHT Implementation O(nlog(n))
 std::vector<Complex> wht(std::vector<Complex> a) {
     int N = static_cast<int>(a.size());
     int M = 1;
@@ -234,6 +209,7 @@ std::vector<Complex> wht(std::vector<Complex> a) {
     return result;
 }
 
+// Inverse WHT Implementation O(nlog(n))
 std::vector<Complex> iwht(std::vector<Complex> a) {
     int N = static_cast<int>(a.size());
     int M = 1;

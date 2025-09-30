@@ -14,10 +14,12 @@
 #include <cmath>
 #include <algorithm>
 
+// some useful naming shortcuts
 using Complex = std::complex<double>;
 using TransformFunc = std::vector<Complex>(*)(std::vector<Complex>);
 const double PI = acos(-1.0);
 
+// headers
 #include "ImageData.h"
 #include "Utils.h"
 #include "BmpTools.h"
@@ -30,7 +32,7 @@ private:
         std::function<void(const std::vector<std::string>&)> handler;
         std::string description;
         std::string usage;
-        // std::string flags;
+        std::string flags;
     };
     
     std::map<std::string, Command> commands;    // Array of commands
@@ -94,15 +96,18 @@ private:
             std::cout << "  " << name << " - " << cmd.description << std::endl;
             if (!cmd.usage.empty()) {
                 std::cout << "    Usage: " << cmd.usage << std::endl;
+                std::cout << "    Flags: " << cmd.flags << std::endl;
+                std::cout << std::endl;
             }
         }
         std::cout << "\nFlag guide:" << std::endl;
-        std::cout << "-n :: choose one of 16 (0 - 15) image slots for  command (default = 0)" << std::endl;
+        std::cout << "-n :: choose one of 16 (0 - 15) image slots for command (default = 0)" << std::endl;
         std::cout << "-s :: input mandatory size parameter for command (no default)" << std::endl;
         std::cout << "-sx :: input x-size parameter for command (default = img.width)" << std::endl;
         std::cout << "-sy :: input y-size parameter for command (default = img.height)" << std::endl;
 
         std::cout << "\nSupported format: 24-bit uncompressed BMP files" << std::endl;
+        std::cout << "Image is lept as complex matrix, automatically cast into 8 bit integers when saving" << std::endl;
     }
     
     void handleInfo(const std::vector<std::string>& args) {
@@ -144,6 +149,7 @@ private:
         }
     }
 
+    // invert image
     void handleInvert(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -167,6 +173,7 @@ private:
         std::cout << "Image colors inverted" << std::endl;
     }
     
+    // Grayscale image
     void handleGrayscale(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -194,6 +201,7 @@ private:
         std::cout << "Image converted to grayscale" << std::endl;
     }
     
+    // Flip
     void handleFlip(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 1, allowed);
@@ -230,6 +238,7 @@ private:
         }
     }
 
+    // Take abslute value
     void handleAbs(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -252,6 +261,7 @@ private:
         std::cout << "Taken absolute value" << std::endl;
     }
 
+    // Quantize
     void handleQuantize(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -280,6 +290,7 @@ private:
         std::cout << "Quantized" << std::endl;
     }
 
+    // Apply Cutoff
     void handleCutoff(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -354,8 +365,6 @@ private:
         int rx = img.width % sx;
         int ry = img.height % sy;
 
-        // std::cout<< tx <<" "<< ty <<std::endl;
-
         for(int x1 = 0 ; x1 < tx ; x1++){
             for(int y1 = 0 ; y1 < ty ; y1++){
                 levelHelper(img, x1 * sx, y1 * sy, sx, sy);
@@ -398,7 +407,6 @@ private:
         int ty = img.height / sy;
         int rx = img.width % sx;
         int ry = img.height % sy;
-        // std::cout << sx << sy << std::endl;
 
         bool flag = false;
 
@@ -546,139 +554,162 @@ public:
         registerCommand("load", 
             [this](const std::vector<std::string>& args) { handleLoad(args); },
             "Load image from BMP file into 3D RGB array",
-            "load <filename.bmp>"
+            "load <filename.bmp>",
+            "-n"
         );
         
         registerCommand("save", 
             [this](const std::vector<std::string>& args) { handleSave(args); },
             "Save current image to BMP file",
-            "save <filename.bmp>"
+            "save <filename.bmp>",
+            "-n"
         );
         
         registerCommand("info", 
             [this](const std::vector<std::string>& args) { handleInfo(args); },
             "Show information about currently loaded image",
-            "info"
+            "info",
+            "-n"
         );
         
         registerCommand("exit", 
             [this](const std::vector<std::string>& args) { handleExit(args); },
             "Exit the program",
-            "exit"
+            "exit",
+            "NONE"
         );
         
         registerCommand("quit", 
             [this](const std::vector<std::string>& args) { handleExit(args); },
             "Exit the program",
-            "quit"
+            "quit",
+            "NONE"
         );
         
         registerCommand("help", 
             [this](const std::vector<std::string>& args) { handleHelp(args); },
             "Show available commands",
-            "help"
+            "help",
+            "NONE"
         );
 
         registerCommand("invert", 
             [this](const std::vector<std::string>& args) { handleInvert(args); },
             "Invert colors of the current image",
-            "invert"
+            "invert",
+            "-n"
         );
         
         registerCommand("grayscale", 
             [this](const std::vector<std::string>& args) { handleGrayscale(args); },
             "Convert current image to grayscale",
-            "grayscale"
+            "grayscale",
+            "-n"
         );
         
         registerCommand("flip", 
             [this](const std::vector<std::string>& args) { handleFlip(args); },
             "Flip image horizontally or vertically",
-            "flip [horizontal | vertical]"
+            "flip [horizontal | vertical]",
+            "-n"
         );
 
         registerCommand("abs", 
             [this](const std::vector<std::string>& args) { handleAbs(args); },
             "Replaces each pixel with absolute value",
-            "abs"
+            "abs",
+            "-n"
         );
 
         registerCommand("quant", 
             [this](const std::vector<std::string>& args) { handleQuantize(args); },
             "Replaces each pixel with absolute value",
-            "quant -s [int]"
+            "quant -s [int]",
+            "-n -s"
         );
 
         registerCommand("level", 
             [this](const std::vector<std::string>& args) { handleLevel(args); },
             "Averages each square",
-            "level -sx [int] -sy [int]"
+            "level -sx [int] -sy [int]",
+            "-n -sx -sy"
         );
 
         registerCommand("cutoff", 
             [this](const std::vector<std::string>& args) { handleCutoff(args); },
             "Replaces value with 0 if absolute value is less than s",
-            "cutoff -s [int]"
+            "cutoff -s [int]",
+            "-n -s"
         );
 
         registerCommand("fft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, fft); },
             "Fourier Transforms image horizontally or vertically",
-            "fft [h | v | d]"
+            "fft [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("ifft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, ifft); },
             "Inverse Fourier Transforms image horizontally or vertically",
-            "ifft [h | v | d]"
+            "ifft [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("dft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dft); },
             "Fourier Transforms image horizontally or vertically",
-            "dft [h | v | d]"
+            "dft [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("idft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idft); },
             "Inverse Fourier Transforms image horizontally or vertically",
-            "idft [h | v | d]"
+            "idft [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("dct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dct2); },
             "Cosine Transforms real part of image horizontally or vertically",
-            "dct [h | v | d]"
+            "dct [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("idct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idct2); },
             "Inverse Cosine Transforms real part of image horizontally or vertically",
-            "idct [h | v | d]"
+            "idct [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("dst", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dst2); },
             "Sine Transforms real part of image horizontally or vertically",
-            "dst [h | v | d]"
+            "dst [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("idst", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idst2); },
             "Inverse Sine Transforms real part of image horizontally or vertically",
-            "idst [h | v | d]"
+            "idst [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("wht", 
             [this](const std::vector<std::string>& args) { handleTransform(args, wht); },
             "Walsh-Hadamard Transforms image horizontally or vertically",
-            "wht [h | v | d]"
+            "wht [h | v | d]",
+            "-n -sx -sy"
         );
 
         registerCommand("iwht", 
             [this](const std::vector<std::string>& args) { handleTransform(args, iwht); },
             "Inverse Walsh-Hadamard Transforms image horizontally or vertically",
-            "iwht [h | v | d]"
+            "iwht [h | v | d]",
+            "-n -sx -sy"
         );
     }
     
@@ -686,8 +717,9 @@ public:
     void registerCommand(const std::string& name, 
                         std::function<void(const std::vector<std::string>&)> handler,
                         const std::string& description = "",
-                        const std::string& usage = "") {
-        commands[name] = {handler, description, usage};
+                        const std::string& usage = "",
+                        const std::string& flags = "" ) {
+        commands[name] = {handler, description, usage, flags};
     }
     
     // Main CLI loop

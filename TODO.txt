@@ -3,5 +3,8 @@ NTT
 maybe check that weird wrong dst (+1 -> +0.5)
 add log
 add batch processing
-error handling
-Write manual
+add ycmk
+add scale
+add sort
+add +-c
+image algebra
