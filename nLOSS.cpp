@@ -17,6 +17,9 @@
 // some useful naming shortcuts
 using Complex = std::complex<double>;
 using TransformFunc = std::vector<Complex>(*)(std::vector<Complex>);
+using SortFunc = std::function<bool(const std::complex<double>&, const std::complex<double>&)>;
+using Triple = std::array<std::complex<double>, 3>;
+using PixelFunc = std::function<Triple(Triple&)>;
 const double PI = acos(-1.0);
 
 // headers
@@ -110,6 +113,7 @@ private:
         std::cout << "Image is lept as complex matrix, automatically cast into 8 bit integers when saving" << std::endl;
     }
     
+    // Image info
     void handleInfo(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -149,58 +153,6 @@ private:
         }
     }
 
-    // invert image
-    void handleInvert(const std::vector<std::string>& args) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
-        std::map<std::string, int> catches = parseVector(args, 0, allowed);
-        if (catches["failed"]) return;
-        ImageData& img = currentImage[catches["-n"]];
-        
-        if (!img.isLoaded) {
-            std::cerr << "Error: No image loaded" << std::endl;
-            return;
-        }
-        
-        Complex c_255 = Complex(255,0);
-        for (int y = 0; y < img.height; y++) {
-            for (int x = 0; x < img.width; x++) {
-                img.pixels[y][x][0] = c_255 - img.pixels[y][x][0]; // Invert Red
-                img.pixels[y][x][1] = c_255 - img.pixels[y][x][1]; // Invert Green
-                img.pixels[y][x][2] = c_255 - img.pixels[y][x][2]; // Invert Blue
-            }
-        }
-        
-        std::cout << "Image colors inverted" << std::endl;
-    }
-    
-    // Grayscale image
-    void handleGrayscale(const std::vector<std::string>& args) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
-        std::map<std::string, int> catches = parseVector(args, 0, allowed);
-        if (catches["failed"]) return;
-        ImageData& img = currentImage[catches["-n"]];
-
-        if (!img.isLoaded) {
-            std::cerr << "Error: No image loaded" << std::endl;
-            return;
-        }
-        
-        for (int y = 0; y < img.height; y++) {
-            for (int x = 0; x < img.width; x++) {
-                // Calculate luminance
-                Complex gray =
-                    Complex(0.299,0) * img.pixels[y][x][0] + 
-                    Complex(0.587,0) * img.pixels[y][x][1] + 
-                    Complex(0.114,0) * img.pixels[y][x][2];
-                img.pixels[y][x][0] = gray;
-                img.pixels[y][x][1] = gray;
-                img.pixels[y][x][2] = gray;
-            }
-        }
-        
-        std::cout << "Image converted to grayscale" << std::endl;
-    }
-    
     // Flip
     void handleFlip(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
@@ -236,29 +188,6 @@ private:
         } else {
             std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
         }
-    }
-
-    // Take abslute value
-    void handleAbs(const std::vector<std::string>& args) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
-        std::map<std::string, int> catches = parseVector(args, 0, allowed);
-        if (catches["failed"]) return;
-        ImageData& img = currentImage[catches["-n"]];
-
-        if (!img.isLoaded) {
-            std::cerr << "Error: No image loaded" << std::endl;
-            return;
-        }
-        
-        for (int y = 0; y < img.height; y++) {
-            for (int x = 0; x < img.width; x++) {
-                img.pixels[y][x][0] = Complex(std::abs(img.pixels[y][x][0]),0);
-                img.pixels[y][x][1] = Complex(std::abs(img.pixels[y][x][1]),0);
-                img.pixels[y][x][2] = Complex(std::abs(img.pixels[y][x][2]),0);
-            }
-        }
-        
-        std::cout << "Taken absolute value" << std::endl;
     }
 
     // Quantize
@@ -319,6 +248,7 @@ private:
         std::cout << "Cutoff Applied" << std::endl;
     }
 
+    // Apply Multiplicative filter
     void handleFilter(const std::vector<std::string>& args, Complex (* filter)(double, double)) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -347,6 +277,36 @@ private:
         std::cout << "Cutoff Applied" << std::endl;
     }
 
+    // handle pixel functions
+    void handleFunc(const std::vector<std::string>& args, PixelFunc func) {
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+        
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                Triple a;
+                a[0] = img.pixels[y][x][0];
+                a[1] = img.pixels[y][x][1];
+                a[2] = img.pixels[y][x][2];
+                a = func(a);
+                img.pixels[y][x][0] = a[0];
+                img.pixels[y][x][1] = a[1];
+                img.pixels[y][x][2] = a[2];
+                
+            }
+        }
+        
+        std::cout << "Applied pixel function" << std::endl;
+    }
+
+    // average each block
     void handleLevel(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
@@ -386,6 +346,7 @@ private:
         std::cout << "Image Levelled" << std::endl;
     }
 
+    // Apply transform
     void handleTransform(const std::vector<std::string>& args, TransformFunc func) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 1, allowed);
@@ -462,8 +423,6 @@ private:
                         img.pixels[y2][x2][1] = rem_strip_1[y];
                         img.pixels[y2][x2][2] = rem_strip_2[y];
                     }
-
-
                 }
             }
         } if (direction == "v" || direction == "d") {
@@ -517,8 +476,6 @@ private:
                         img.pixels[y2][x2][1] = rem_strip_1[x];
                         img.pixels[y2][x2][2] = rem_strip_2[x];
                     }
-
-
                 }
             }
         }
@@ -529,6 +486,149 @@ private:
             if ( direction == "v") std::cout << "Image transformed along vertical axis" << std::endl;
             if ( direction == "h") std::cout << "Image transformed along horizontal axis" << std::endl;
             if ( direction == "d") std::cout << "Image transformed along both axes" << std::endl;
+        }
+    }
+
+    // Apply sort (breaks up pixels)
+    void handleSortDisjoint(const std::vector<std::string>& args, SortFunc func) {
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+
+        std::string direction = "horizontal";
+        if (!args.empty()) {
+            direction = args[0];
+        }
+        int sx = catches["-sx"] ? catches["-sx"] : img.width;
+        int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        int tx = img.width / sx;
+        int ty = img.height / sy;
+        int rx = img.width % sx;
+        int ry = img.height % sy;
+
+        bool flag = false;
+
+        
+        if (direction == "h" || direction == "d") {
+            flag = true;
+
+            std::vector<Complex> strip_0(sy);
+            std::vector<Complex> strip_1(sy);
+            std::vector<Complex> strip_2(sy);
+            for(int x2 = 0 ; x2 < img.width ; x2++){
+                for(int y1 = 0 ; y1 < ty ; y1++){
+                    
+                    for (int y = 0 ; y < sy; y++) {
+                        int y2 = y1 * sy + y;
+                        strip_0[y] = img.pixels[y2][x2][0];
+                        strip_1[y] = img.pixels[y2][x2][1];
+                        strip_2[y] = img.pixels[y2][x2][2];
+                    }
+                    
+                    std::sort(strip_0.begin(), strip_0.end(), func);
+                    std::sort(strip_1.begin(), strip_1.end(), func);
+                    std::sort(strip_2.begin(), strip_2.end(), func);
+
+                    for (int y = 0 ; y < sy ; y++) {
+                        int y2 = y1 * sy + y;
+                        img.pixels[y2][x2][0] = strip_0[y];
+                        img.pixels[y2][x2][1] = strip_1[y];
+                        img.pixels[y2][x2][2] = strip_2[y];
+                    }
+                }
+
+                if(ry > 0){
+
+                    std::vector<Complex> rem_strip_0(ry);
+                    std::vector<Complex> rem_strip_1(ry);
+                    std::vector<Complex> rem_strip_2(ry);
+
+                    for (int y = 0 ; y < ry; y++) {
+                        int y2 = img.width - ry + y;
+                        rem_strip_0[y] = img.pixels[y2][x2][0];
+                        rem_strip_1[y] = img.pixels[y2][x2][1];
+                        rem_strip_2[y] = img.pixels[y2][x2][2];
+                    }
+
+                    std::sort(rem_strip_0.begin(), rem_strip_0.end(), func);
+                    std::sort(rem_strip_1.begin(), rem_strip_1.end(), func);
+                    std::sort(rem_strip_2.begin(), rem_strip_2.end(), func);
+
+                    for (int y = 0 ; y < ry ; y++) {
+                        int y2 = img.width - ry + y;
+                        img.pixels[y2][x2][0] = rem_strip_0[y];
+                        img.pixels[y2][x2][1] = rem_strip_1[y];
+                        img.pixels[y2][x2][2] = rem_strip_2[y];
+                    }
+                }
+            }
+        } if (direction == "v" || direction == "d") {
+            flag = true;
+
+            std::vector<Complex> strip_0(sx);
+            std::vector<Complex> strip_1(sx);
+            std::vector<Complex> strip_2(sx);
+            for(int y2 = 0 ; y2 < img.width ; y2++){
+                for(int x1 = 0 ; x1 < tx ; x1++){
+                    
+                    for (int x = 0 ; x < sx; x++) {
+                        int x2 = x1 * sx + x;
+                        strip_0[x] = img.pixels[y2][x2][0];
+                        strip_1[x] = img.pixels[y2][x2][1];
+                        strip_2[x] = img.pixels[y2][x2][2];
+                    }
+
+                    std::sort(strip_0.begin(), strip_0.end(), func);
+                    std::sort(strip_1.begin(), strip_1.end(), func);
+                    std::sort(strip_2.begin(), strip_2.end(), func);
+
+                    for (int x = 0 ; x < sx ; x++) {
+                        int x2 = x1 * sx + x;
+                        img.pixels[y2][x2][0] = strip_0[x];
+                        img.pixels[y2][x2][1] = strip_1[x];
+                        img.pixels[y2][x2][2] = strip_2[x];
+                    }
+                }
+
+                if(rx > 0){
+
+                    std::vector<Complex> rem_strip_0(rx);
+                    std::vector<Complex> rem_strip_1(rx);
+                    std::vector<Complex> rem_strip_2(rx);
+
+                    for (int x = 0 ; x < rx; x++) {
+                        int x2 = img.width - rx + x;
+                        rem_strip_0[x] = img.pixels[y2][x2][0];
+                        rem_strip_1[x] = img.pixels[y2][x2][1];
+                        rem_strip_2[x] = img.pixels[y2][x2][2];
+                    }
+
+                    std::sort(rem_strip_0.begin(), rem_strip_0.end(), func);
+                    std::sort(rem_strip_1.begin(), rem_strip_1.end(), func);
+                    std::sort(rem_strip_2.begin(), rem_strip_2.end(), func);
+
+                    for (int x = 0 ; x < rx ; x++) {
+                        int x2 = img.width - rx + x;
+                        img.pixels[y2][x2][0] = rem_strip_0[x];
+                        img.pixels[y2][x2][1] = rem_strip_1[x];
+                        img.pixels[y2][x2][2] = rem_strip_2[x];
+                    }
+                }
+            }
+        }
+        if (!flag) {
+            std::cerr << "Error: Invalid direction. Use 'd', 'h' or 'v'" << std::endl;
+        }
+        else {
+            if ( direction == "v") std::cout << "Image sorted along vertical axis" << std::endl;
+            if ( direction == "h") std::cout << "Image sorted along horizontal axis" << std::endl;
+            if ( direction == "d") std::cout << "Image sorted along both axes" << std::endl;
         }
     }
     
@@ -594,14 +694,14 @@ public:
         );
 
         registerCommand("invert", 
-            [this](const std::vector<std::string>& args) { handleInvert(args); },
+            [this](const std::vector<std::string>& args) { handleFunc(args, PF_invert); },
             "Invert colors of the current image",
             "invert",
             "-n"
         );
         
         registerCommand("grayscale", 
-            [this](const std::vector<std::string>& args) { handleGrayscale(args); },
+            [this](const std::vector<std::string>& args) { handleFunc(args, PF_grayscale); },
             "Convert current image to grayscale",
             "grayscale",
             "-n"
@@ -615,7 +715,7 @@ public:
         );
 
         registerCommand("abs", 
-            [this](const std::vector<std::string>& args) { handleAbs(args); },
+            [this](const std::vector<std::string>& args) { handleFunc(args, PF_absolute); },
             "Replaces each pixel with absolute value",
             "abs",
             "-n"
@@ -711,6 +811,34 @@ public:
             "iwht [h | v | d]",
             "-n -sx -sy"
         );
+
+        registerCommand("sort", 
+            [this](const std::vector<std::string>& args) { handleSortDisjoint(args, sort_v1); },
+            "Sort colors image horizontally or vertically",
+            "sort [h | v | d]",
+            "-n -sx -sy"
+        );
+
+        registerCommand("fit", 
+            [this](const std::vector<std::string>& args) { handleFunc(args, PF_fit); },
+            "fit each pixel to [0,255]",
+            "fit",
+            "-n"
+        );
+
+        registerCommand("real", 
+            [this](const std::vector<std::string>& args) { handleFunc(args, PF_real); },
+            "keep only real part of image",
+            "real",
+            "-n"
+        );
+
+        registerCommand("im", 
+            [this](const std::vector<std::string>& args) { handleFunc(args, PF_im); },
+            "keep only imaginary part of image",
+            "im",
+            "-n"
+        );
     }
     
     // Method to register new commands (for scalability)
@@ -730,7 +858,7 @@ public:
         while (running) {
             std::cout << "> ";
             std::string input;
-            std::getline(std::cin, input);
+            if (! std::getline(std::cin, input)) running = false;
             
             // Skip empty input
             if (input.empty()) {
