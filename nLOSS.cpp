@@ -1,3 +1,11 @@
+#include "Commons.h"
+#include "ImageData.h"
+#include "Utils.h"
+#include "BmpTools.h"
+#include "FFTTools.h"
+#include "FuncTools.h"
+
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -7,27 +15,73 @@
 #include <fstream>
 #include <memory>
 #include <cstring>
-#include <charconv>  // from_chars
-#include <optional>  // for std::optional
-
 #include <complex>
 #include <cmath>
 #include <algorithm>
 
-// some useful naming shortcuts
-using Complex = std::complex<double>;
-using TransformFunc = std::vector<Complex>(*)(std::vector<Complex>);
-using SortFunc = std::function<bool(const std::complex<double>&, const std::complex<double>&)>;
-using Triple = std::array<std::complex<double>, 3>;
-using PixelFunc = std::function<Triple(Triple&)>;
-const double PI = acos(-1.0);
 
-// headers
-#include "ImageData.h"
-#include "Utils.h"
-#include "BmpTools.h"
-#include "FFTTools.h"
-#include "FuncTools.h"
+
+
+
+// Parse global flags
+std::map<std::string, int> parseVector(const std::vector<std::string>& args, int start, std::map<std::string, bool> allowed){
+
+    std::map<std::string, int> catches = {{"failed", 0}, {"-n", 0}, {"-s", 0}, {"-sx", 0}, {"-sy", 0}, {"-fr", 0}};
+
+    for (int i = start; i < args.size(); ++i) {
+        if (args[i] == "-n" && allowed["-n"]) {
+            i++;
+            if (auto val = toInt(args[i])) {
+                if(*val <= 15) catches["-n"] = *val;
+            } else {
+                std::cout << "Error: -n must be followed by a number"<<std::endl;;
+                catches["failed"] = 1;
+                return catches;
+            }
+        }
+        else if (args[i] == "-s" && allowed["-s"]) {
+            i++;
+            if (auto val = toInt(args[i])) {
+                if(*val > 0) catches["-s"] = *val;
+            } else {
+                std::cout << "Error: -s must be followed by a number"<<std::endl;;
+                catches["failed"] = 1;
+                return catches;
+            }
+        }
+        else if (args[i] == "-sx" && allowed["-sx"]) {
+            i++;
+            if (auto val = toInt(args[i])) {
+                if(*val > 0) catches["-sx"] = *val;
+            } else {
+                std::cout << "Error: -sx must be followed by a number"<<std::endl;;
+                catches["failed"] = 1;
+                return catches;
+            }
+        }
+        else if (args[i] == "-sy" && allowed["-sy"]) {
+            i++;
+            if (auto val = toInt(args[i])) {
+                if(*val > 0) catches["-sy"] = *val;
+            } else {
+                std::cout << "Error: -sy must be followed by a number"<<std::endl;;
+                catches["failed"] = 1;
+                return catches;
+            }
+        }
+        else if (args[i] == "-fr" && allowed["-fr"]) {
+            catches["-fr"] = 1;
+        }
+        else {
+            std::cout << "Error: argument " << args[i] <<" not allowed in this function"<<std::endl;;
+            catches["failed"] = 1;
+            return catches;
+        }
+    }
+
+    return catches;
+}
+
 
 class CLI {
 private:

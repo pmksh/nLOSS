@@ -1,3 +1,12 @@
+#pragma once
+
+#include "Commons.h"
+
+#include <optional>
+#include <vector>
+#include <map>
+#include <charconv>
+
 
 
 // Try to parse string as int, return value if valid, otherwise std::nullopt
@@ -9,66 +18,6 @@ std::optional<int> toInt(const std::string& s) {
         return value;  // success
     }
     return std::nullopt; // failure
-}
-
-
-// Parse global flags
-std::map<std::string, int> parseVector(const std::vector<std::string>& args, int start, std::map<std::string, bool> allowed){
-
-    std::map<std::string, int> catches = {{"failed", 0}, {"-n", 0}, {"-s", 0}, {"-sx", 0}, {"-sy", 0}, {"-fr", 0}};
-
-    for (int i = start; i < args.size(); ++i) {
-        if (args[i] == "-n" && allowed["-n"]) {
-            i++;
-            if (auto val = toInt(args[i])) {
-                if(*val <= 15) catches["-n"] = *val;
-            } else {
-                std::cout << "Error: -n must be followed by a number"<<std::endl;;
-                catches["failed"] = 1;
-                return catches;
-            }
-        }
-        else if (args[i] == "-s" && allowed["-s"]) {
-            i++;
-            if (auto val = toInt(args[i])) {
-                if(*val > 0) catches["-s"] = *val;
-            } else {
-                std::cout << "Error: -s must be followed by a number"<<std::endl;;
-                catches["failed"] = 1;
-                return catches;
-            }
-        }
-        else if (args[i] == "-sx" && allowed["-sx"]) {
-            i++;
-            if (auto val = toInt(args[i])) {
-                if(*val > 0) catches["-sx"] = *val;
-            } else {
-                std::cout << "Error: -sx must be followed by a number"<<std::endl;;
-                catches["failed"] = 1;
-                return catches;
-            }
-        }
-        else if (args[i] == "-sy" && allowed["-sy"]) {
-            i++;
-            if (auto val = toInt(args[i])) {
-                if(*val > 0) catches["-sy"] = *val;
-            } else {
-                std::cout << "Error: -sy must be followed by a number"<<std::endl;;
-                catches["failed"] = 1;
-                return catches;
-            }
-        }
-        else if (args[i] == "-fr" && allowed["-fr"]) {
-            catches["-fr"] = 1;
-        }
-        else {
-            std::cout << "Error: argument " << args[i] <<" not allowed in this function"<<std::endl;;
-            catches["failed"] = 1;
-            return catches;
-        }
-    }
-
-    return catches;
 }
 
 

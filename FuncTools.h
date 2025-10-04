@@ -1,11 +1,21 @@
+#pragma once
+
+#include "Commons.h"
+#include "Utils.h"
+
+
+
+
 // Function tools
 // work in progress
+
+
 Complex Quantize(Complex x, int s){
     return Complex(x.real()-(std::fmod(x.real() , s)), 0);
 }
 
 Complex Cutoff(Complex x, int s){
-    if (abs(x) > s) return x;
+    if (std::abs(x) > s) return x;
     return Complex(0,0);
 }
 
@@ -69,7 +79,7 @@ Triple PF_im(Triple& a){
 // Sort tools
 
 //sort by real
-bool sort_v1(const std::complex<double>& a, const std::complex<double>& b) {
+bool sort_v1(const Complex& a, const Complex& b) {
     
     if (std::real(a) == std::real(b))
         return std::arg(a) < std::arg(b);

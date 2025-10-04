@@ -1,3 +1,12 @@
+#include "Commons.h"
+
+#include <fstream>
+#include <memory>
+#include <charconv>
+#include <cstdint>
+
+
+
 
 // BMP file header structures
 #pragma pack(push, 1)  // Pack structures to 1 byte alignment

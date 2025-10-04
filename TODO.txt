@@ -9,3 +9,4 @@ add sort
 add +-c
 image algebra
 improve flag parser architecture
+naming conventions
