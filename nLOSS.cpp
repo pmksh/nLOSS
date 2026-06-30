@@ -686,6 +686,83 @@ private:
         }
     }
     
+    // Apply warp
+    void handleWarp(const std::vector<std::string>& args, WarpFunc invFunc) {
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+
+        // int sx = catches["-sx"] ? catches["-sx"] : img.width;
+        // int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        // int tx = img.width / sx;
+        // int ty = img.height / sy;
+        // int rx = img.width % sx;
+        // int ry = img.height % sy;
+
+        int fx, fy, fx1, fy1;
+        double nx, ny, rx, ry;
+        std::vector<std::vector<std::array<Complex,3>>> newPixels(
+            img.height,
+            std::vector<std::array<Complex,3>>(img.width)
+        );
+        
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                Triple a;
+
+                double normX = static_cast<double>(x) / (img.width - 1);
+                double normY = static_cast<double>(y) / (img.height - 1);
+                std::pair<double, double> tmp = invFunc(normX , normY);
+                nx = tmp.first;
+                ny = tmp.second;
+                nx *= (img.width - 1);
+                ny *= (img.height - 1);
+
+                fx = std::clamp((int)std::floor(nx), 0, img.width - 1);
+                fy = std::clamp((int)std::floor(ny), 0, img.height - 1);
+
+                fx1 = std::clamp(fx + 1, 0, img.width - 1);
+                fy1 = std::clamp(fy + 1, 0, img.height - 1);
+
+                rx = nx - (double) std::floor(nx);
+                ry = ny - (double) std::floor(ny);
+                
+                newPixels[y][x][0] = (1-ry) * (1-rx) * img.pixels[fy][fx][0] + 
+                                     (ry) * (1-rx) * img.pixels[fy1][fx][0] + 
+                                     (1-ry) * (rx) * img.pixels[fy][fx1][0] + 
+                                     (ry) * (rx) * img.pixels[fy1][fx1][0];
+
+                newPixels[y][x][1] = (1-ry) * (1-rx) * img.pixels[fy][fx][1] + 
+                                     (ry) * (1-rx) * img.pixels[fy1][fx][1] + 
+                                     (1-ry) * (rx) * img.pixels[fy][fx1][1] + 
+                                     (ry) * (rx) * img.pixels[fy1][fx1][1];
+
+                newPixels[y][x][2] = (1-ry) * (1-rx) * img.pixels[fy][fx][2] + 
+                                     (ry) * (1-rx) * img.pixels[fy1][fx][2] + 
+                                     (1-ry) * (rx) * img.pixels[fy][fx1][2] + 
+                                     (ry) * (rx) * img.pixels[fy1][fx1][2];
+                
+            }
+        }
+
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                
+                img.pixels[y][x][0] = newPixels[y][x][0];
+                img.pixels[y][x][1] = newPixels[y][x][1];
+                img.pixels[y][x][2] = newPixels[y][x][2];
+            }
+        }
+        
+        std::cout << "Applied warp function" << std::endl;
+    }
+    
     // Parse command line into command and arguments
     std::pair<std::string, std::vector<std::string>> parseInput(const std::string& input) {
         std::istringstream iss(input);
@@ -891,6 +968,20 @@ public:
             [this](const std::vector<std::string>& args) { handleFunc(args, PF_im); },
             "keep only imaginary part of image",
             "im",
+            "-n"
+        );
+
+        registerCommand("warp-sqrt", 
+            [this](const std::vector<std::string>& args) { handleWarp(args, warp_square); },
+            "takes x -> sqrt x",
+            "warp-sqrt",
+            "-n"
+        );
+
+        registerCommand("warp-square", 
+            [this](const std::vector<std::string>& args) { handleWarp(args, warp_sqrt); },
+            "takes x -> x^2",
+            "warp-square",
             "-n"
         );
     }

@@ -5,8 +5,8 @@ add log
 add batch processing
 add ycmk
 add scale
-add sort
 add +-c
 image algebra
 improve flag parser architecture
 naming conventions
+add -sx -sy to warp

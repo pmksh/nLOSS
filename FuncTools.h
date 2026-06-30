@@ -86,3 +86,15 @@ bool sort_v1(const Complex& a, const Complex& b) {
     return std::real(a) < std::real(b);
 }
 
+
+// warp tools
+
+std::pair<double, double> warp_square(double x, double y){
+
+    return std::pair<double, double>(x * x, y * y);
+}
+
+std::pair<double, double> warp_sqrt(double x, double y){
+
+    return std::pair<double, double>(std::sqrt(x), std::sqrt(y));
+}
