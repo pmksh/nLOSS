@@ -688,7 +688,7 @@ private:
     
     // Apply warp
     void handleWarp(const std::vector<std::string>& args, WarpFunc invFunc) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
@@ -704,6 +704,9 @@ private:
         // int ty = img.height / sy;
         // int rx = img.width % sx;
         // int ry = img.height % sy;
+
+        int s = catches["-s"] ? catches["-sx"] : 0;
+
 
         int fx, fy, fx1, fy1;
         double nx, ny, rx, ry;
@@ -732,22 +735,28 @@ private:
 
                 rx = nx - (double) std::floor(nx);
                 ry = ny - (double) std::floor(ny);
-                
-                newPixels[y][x][0] = (1-ry) * (1-rx) * img.pixels[fy][fx][0] + 
-                                     (ry) * (1-rx) * img.pixels[fy1][fx][0] + 
-                                     (1-ry) * (rx) * img.pixels[fy][fx1][0] + 
-                                     (ry) * (rx) * img.pixels[fy1][fx1][0];
 
-                newPixels[y][x][1] = (1-ry) * (1-rx) * img.pixels[fy][fx][1] + 
-                                     (ry) * (1-rx) * img.pixels[fy1][fx][1] + 
-                                     (1-ry) * (rx) * img.pixels[fy][fx1][1] + 
-                                     (ry) * (rx) * img.pixels[fy1][fx1][1];
+                if (s == 1 ) {
+                    newPixels[y][x][0] = (1-ry) * (1-rx) * img.pixels[fy][fx][0] + 
+                                        (ry) * (1-rx) * img.pixels[fy1][fx][0] + 
+                                        (1-ry) * (rx) * img.pixels[fy][fx1][0] + 
+                                        (ry) * (rx) * img.pixels[fy1][fx1][0];
 
-                newPixels[y][x][2] = (1-ry) * (1-rx) * img.pixels[fy][fx][2] + 
-                                     (ry) * (1-rx) * img.pixels[fy1][fx][2] + 
-                                     (1-ry) * (rx) * img.pixels[fy][fx1][2] + 
-                                     (ry) * (rx) * img.pixels[fy1][fx1][2];
-                
+                    newPixels[y][x][1] = (1-ry) * (1-rx) * img.pixels[fy][fx][1] + 
+                                        (ry) * (1-rx) * img.pixels[fy1][fx][1] + 
+                                        (1-ry) * (rx) * img.pixels[fy][fx1][1] + 
+                                        (ry) * (rx) * img.pixels[fy1][fx1][1];
+
+                    newPixels[y][x][2] = (1-ry) * (1-rx) * img.pixels[fy][fx][2] + 
+                                        (ry) * (1-rx) * img.pixels[fy1][fx][2] + 
+                                        (1-ry) * (rx) * img.pixels[fy][fx1][2] + 
+                                        (ry) * (rx) * img.pixels[fy1][fx1][2];
+                }
+                else {
+                    newPixels[y][x][0] = img.pixels[fy][fx][0];
+                    newPixels[y][x][1] = img.pixels[fy][fx][1];
+                    newPixels[y][x][2] = img.pixels[fy][fx][2];
+                }
             }
         }
 
@@ -973,16 +982,23 @@ public:
 
         registerCommand("warp-sqrt", 
             [this](const std::vector<std::string>& args) { handleWarp(args, warp_square); },
-            "takes x -> sqrt x",
+            "takes (x,y) -> (sqrt(x),sqrt(y)), -s 1 determines blending",
             "warp-sqrt",
-            "-n"
+            "-n -s"
         );
 
         registerCommand("warp-square", 
             [this](const std::vector<std::string>& args) { handleWarp(args, warp_sqrt); },
-            "takes x -> x^2",
+            "takes (x,y) -> (x^2,y^2), -s 1 determines blending",
             "warp-square",
-            "-n"
+            "-n -s"
+        );
+
+        registerCommand("pixel-square", 
+            [this](const std::vector<std::string>& args) { handleFunc(args, PF_square); },
+            "takes [r,g,b] -> [r^2,g^2,b^2] / 256",
+            "pixel-square",
+            "-n -s"
         );
     }
     

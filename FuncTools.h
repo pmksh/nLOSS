@@ -75,6 +75,15 @@ Triple PF_im(Triple& a){
     return a;
 }
 
+// square each
+Triple PF_square(Triple& a){
+    a[0] = a[0] * a[0] / Complex(256);
+    a[1] = a[1] * a[1] / Complex(256);
+    a[2] = a[2] * a[2] / Complex(256);
+    return a;
+}
+
+
 
 // Sort tools
 
