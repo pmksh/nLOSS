@@ -416,130 +416,83 @@ private:
         if (!args.empty()) {
             direction = args[0];
         }
+        
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
-        int tx = img.width / sx;
-        int ty = img.height / sy;
-        int rx = img.width % sx;
-        int ry = img.height % sy;
 
         bool flag = false;
 
-        
         if (direction == "h" || direction == "d") {
             flag = true;
 
-            std::vector<Complex> strip_0(sy);
-            std::vector<Complex> strip_1(sy);
-            std::vector<Complex> strip_2(sy);
-            for(int x2 = 0 ; x2 < img.width ; x2++){
-                for(int y1 = 0 ; y1 < ty ; y1++){
-                    
-                    for (int y = 0 ; y < sy; y++) {
-                        int y2 = y1 * sy + y;
-                        strip_0[y] = img.pixels[y2][x2][0];
-                        strip_1[y] = img.pixels[y2][x2][1];
-                        strip_2[y] = img.pixels[y2][x2][2];
+            for (int x = 0; x < img.width; x++) {
+                for (int y1 = img.height; y1 > 0; y1 -= sy) {
+                    int y0 = std::max(0, y1 - sy);
+                    int len = y1 - y0;
+
+                    std::vector<Complex> strip0(len);
+                    std::vector<Complex> strip1(len);
+                    std::vector<Complex> strip2(len);
+
+                    for (int i = 0; i < len; i++) {
+                        strip0[i] = img.pixels[y0 + i][x][0];
+                        strip1[i] = img.pixels[y0 + i][x][1];
+                        strip2[i] = img.pixels[y0 + i][x][2];
                     }
 
-                    strip_0 = func(strip_0);
-                    strip_1 = func(strip_1);
-                    strip_2 = func(strip_2);
+                    strip0 = func(strip0);
+                    strip1 = func(strip1);
+                    strip2 = func(strip2);
 
-                    for (int y = 0 ; y < sy ; y++) {
-                        int y2 = y1 * sy + y;
-                        img.pixels[y2][x2][0] = strip_0[y];
-                        img.pixels[y2][x2][1] = strip_1[y];
-                        img.pixels[y2][x2][2] = strip_2[y];
-                    }
-                }
-
-                if(ry > 0){
-
-                    std::vector<Complex> rem_strip_0(ry);
-                    std::vector<Complex> rem_strip_1(ry);
-                    std::vector<Complex> rem_strip_2(ry);
-
-                    for (int y = 0 ; y < ry; y++) {
-                        int y2 = img.width - ry + y;
-                        rem_strip_0[y] = img.pixels[y2][x2][0];
-                        rem_strip_1[y] = img.pixels[y2][x2][1];
-                        rem_strip_2[y] = img.pixels[y2][x2][2];
-                    }
-
-                    rem_strip_0 = func(rem_strip_0);
-                    rem_strip_1 = func(rem_strip_1);
-                    rem_strip_2 = func(rem_strip_2);
-
-                    for (int y = 0 ; y < ry ; y++) {
-                        int y2 = img.width - ry + y;
-                        img.pixels[y2][x2][0] = rem_strip_0[y];
-                        img.pixels[y2][x2][1] = rem_strip_1[y];
-                        img.pixels[y2][x2][2] = rem_strip_2[y];
+                    for (int i = 0; i < len; i++) {
+                        img.pixels[y0 + i][x][0] = strip0[i];
+                        img.pixels[y0 + i][x][1] = strip1[i];
+                        img.pixels[y0 + i][x][2] = strip2[i];
                     }
                 }
             }
-        } if (direction == "v" || direction == "d") {
+        }
+
+        if (direction == "v" || direction == "d") {
             flag = true;
 
-            std::vector<Complex> strip_0(sx);
-            std::vector<Complex> strip_1(sx);
-            std::vector<Complex> strip_2(sx);
-            for(int y2 = 0 ; y2 < img.width ; y2++){
-                for(int x1 = 0 ; x1 < tx ; x1++){
-                    
-                    for (int x = 0 ; x < sx; x++) {
-                        int x2 = x1 * sx + x;
-                        strip_0[x] = img.pixels[y2][x2][0];
-                        strip_1[x] = img.pixels[y2][x2][1];
-                        strip_2[x] = img.pixels[y2][x2][2];
+            for (int y = 0; y < img.height; y++) {
+                for (int x1 = img.width; x1 > 0; x1 -= sx) {
+                    int x0 = std::max(0, x1 - sx);
+                    int len = x1 - x0;
+
+                    std::vector<Complex> strip0(len);
+                    std::vector<Complex> strip1(len);
+                    std::vector<Complex> strip2(len);
+
+                    for (int i = 0; i < len; i++) {
+                        strip0[i] = img.pixels[y][x0 + i][0];
+                        strip1[i] = img.pixels[y][x0 + i][1];
+                        strip2[i] = img.pixels[y][x0 + i][2];
                     }
 
-                    strip_0 = func(strip_0);
-                    strip_1 = func(strip_1);
-                    strip_2 = func(strip_2);
+                    strip0 = func(strip0);
+                    strip1 = func(strip1);
+                    strip2 = func(strip2);
 
-                    for (int x = 0 ; x < sx ; x++) {
-                        int x2 = x1 * sx + x;
-                        img.pixels[y2][x2][0] = strip_0[x];
-                        img.pixels[y2][x2][1] = strip_1[x];
-                        img.pixels[y2][x2][2] = strip_2[x];
-                    }
-                }
-
-                if(rx > 0){
-
-                    std::vector<Complex> rem_strip_0(rx);
-                    std::vector<Complex> rem_strip_1(rx);
-                    std::vector<Complex> rem_strip_2(rx);
-
-                    for (int x = 0 ; x < rx; x++) {
-                        int x2 = img.width - rx + x;
-                        rem_strip_0[x] = img.pixels[y2][x2][0];
-                        rem_strip_1[x] = img.pixels[y2][x2][1];
-                        rem_strip_2[x] = img.pixels[y2][x2][2];
-                    }
-
-                    rem_strip_0 = func(rem_strip_0);
-                    rem_strip_1 = func(rem_strip_1);
-                    rem_strip_2 = func(rem_strip_2);
-
-                    for (int x = 0 ; x < rx ; x++) {
-                        int x2 = img.width - rx + x;
-                        img.pixels[y2][x2][0] = rem_strip_0[x];
-                        img.pixels[y2][x2][1] = rem_strip_1[x];
-                        img.pixels[y2][x2][2] = rem_strip_2[x];
+                    for (int i = 0; i < len; i++) {
+                        img.pixels[y][x0 + i][0] = strip0[i];
+                        img.pixels[y][x0 + i][1] = strip1[i];
+                        img.pixels[y][x0 + i][2] = strip2[i];
                     }
                 }
             }
         }
+
         if (!flag) {
             std::cerr << "Error: Invalid direction. Use 'd', 'h' or 'v'" << std::endl;
-        }
-        else {
-            if ( direction == "v") std::cout << "Image transformed along vertical axis" << std::endl;
-            if ( direction == "h") std::cout << "Image transformed along horizontal axis" << std::endl;
-            if ( direction == "d") std::cout << "Image transformed along both axes" << std::endl;
+        } else {
+            if (direction == "v")
+                std::cout << "Image transformed along vertical axis" << std::endl;
+            if (direction == "h")
+                std::cout << "Image transformed along horizontal axis" << std::endl;
+            if (direction == "d")
+                std::cout << "Image transformed along both axes" << std::endl;
         }
     }
 
