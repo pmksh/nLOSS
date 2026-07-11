@@ -543,6 +543,59 @@ private:
         }
     }
 
+    void handleClamp(const std::vector<std::string>& args) {
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+
+        std::string direction = "horizontal";
+        if (!args.empty()) {
+            direction = args[0];
+        }
+        int sx = catches["-sx"] ? catches["-sx"] : img.width;
+        int sy = catches["-sy"] ? catches["-sy"] : img.height;
+
+        bool flag = false;
+
+
+        for (int y1 = img.height; y1 > 0; y1 -= sy) {
+            int y0 = std::max(0, y1 - sy);
+
+            for (int x1 = img.width; x1 > 0; x1 -= sx) {
+                int x0 = std::max(0, x1 - sx);
+
+                double maxAbs[3] = {255.0, 255.0, 255.0};
+
+                for (int y = y0; y < y1; y++) {
+                    for (int x = x0; x < x1; x++) {
+                        for (int c = 0; c < 3; c++) {
+                            maxAbs[c] = std::max(maxAbs[c], std::abs(img.pixels[y][x][c]));
+                        }
+                    }
+                }
+
+                for (int y = y0; y < y1; y++) {
+                    for (int x = x0; x < x1; x++) {
+                        for (int c = 0; c < 3; c++) {
+                            if (maxAbs[c] != 0.0) {
+                                img.pixels[y][x][c] =
+                                    img.pixels[y][x][c] / maxAbs[c] * 255.0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        std::cout << "Image clamped" << std::endl;
+    }
+
     // Apply sort (breaks up pixels)
     void handleSortDisjoint(const std::vector<std::string>& args, SortFunc func) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
@@ -998,7 +1051,14 @@ public:
             [this](const std::vector<std::string>& args) { handleFunc(args, PF_square); },
             "takes [r,g,b] -> [r^2,g^2,b^2] / 256",
             "pixel-square",
-            "-n -s"
+            "-n"
+        );
+
+        registerCommand("clamp", 
+            [this](const std::vector<std::string>& args) { handleClamp(args); },
+            "clamps each rectangle within max values",
+            "clamp",
+            "-n -sx, -sy"
         );
     }
     
