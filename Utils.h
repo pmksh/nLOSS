@@ -126,3 +126,10 @@ void levelHelper(ImageData& img, int x_s, int y_s, int x_l, int y_l){
         }
     }
 }
+
+
+// parse pair
+bool parsePair(const std::string& str, double& a, double& b) {
+    // format: exactly "(double,double)" with no spaces
+    return std::sscanf(str.c_str(), "(%lf,%lf)", &a, &b) == 2;
+}

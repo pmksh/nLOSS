@@ -496,6 +496,7 @@ private:
         }
     }
 
+    // Apply clamp
     void handleClamp(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 1, allowed);
@@ -513,9 +514,7 @@ private:
         }
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
-
-        bool flag = false;
-
+        
 
         for (int y1 = img.height; y1 > 0; y1 -= sy) {
             int y0 = std::max(0, y1 - sy);
@@ -778,6 +777,44 @@ private:
         std::cout << "Applied warp function" << std::endl;
     }
     
+    // Apply func with complex input
+    void handleFuncComplex(const std::vector<std::string>& args, PixelFuncComplex func) {
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+
+        double a1, a2;
+
+        if (args.size() < 1 || !parsePair(args[0], a1, a2)){
+            std::cerr << "Error: please input two doubles (a,b)" << std::endl;
+            return;
+        }
+
+        Complex c = Complex(a1,a2);
+        
+        for (int y = 0; y < img.height; y++) {
+            for (int x = 0; x < img.width; x++) {
+                Triple a;
+                a[0] = img.pixels[y][x][0];
+                a[1] = img.pixels[y][x][1];
+                a[2] = img.pixels[y][x][2];
+                a = func(a,c);
+                img.pixels[y][x][0] = a[0];
+                img.pixels[y][x][1] = a[1];
+                img.pixels[y][x][2] = a[2];
+                
+            }
+        }
+        
+        std::cout << "Applied pixel function" << std::endl;
+    }
     // Parse command line into command and arguments
     std::pair<std::string, std::vector<std::string>> parseInput(const std::string& input) {
         std::istringstream iss(input);
@@ -1002,8 +1039,15 @@ public:
 
         registerCommand("pixel-square", 
             [this](const std::vector<std::string>& args) { handleFunc(args, PF_square); },
-            "takes [r,g,b] -> [r^2,g^2,b^2] / 256",
+            "takes [r,g,b] -> [r^2,g^2,b^2]",
             "pixel-square",
+            "-n"
+        );
+
+        registerCommand("pixel-mult", 
+            [this](const std::vector<std::string>& args) { handleFuncComplex(args, PFC_mult); },
+            "multiplies by a complex constant a+bi",
+            "pixel-square (a,b)",
             "-n"
         );
 

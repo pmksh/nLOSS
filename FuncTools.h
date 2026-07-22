@@ -77,9 +77,16 @@ Triple PF_im(Triple& a){
 
 // square each
 Triple PF_square(Triple& a){
-    a[0] = a[0] * a[0] / Complex(256);
-    a[1] = a[1] * a[1] / Complex(256);
-    a[2] = a[2] * a[2] / Complex(256);
+    a[0] = a[0] * a[0];
+    a[1] = a[1] * a[1];
+    a[2] = a[2] * a[2];
+    return a;
+}
+
+Triple PFC_mult(Triple& a, Complex& c){
+    a[0] = a[0] * c;
+    a[1] = a[1] * c;
+    a[2] = a[2] * c;
     return a;
 }
 
