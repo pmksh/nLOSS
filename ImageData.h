@@ -1,6 +1,6 @@
 // Main structure to hold image data
 // Image is stored as complex [height][width][RGB] array
-// Is automatically cast to unsigned cgar when saving
+// Is automatically cast to unsigned char when saving
 
 #include "Commons.h"
 

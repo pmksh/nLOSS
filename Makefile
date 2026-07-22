@@ -14,7 +14,7 @@ TARGET_NAME = nLOSS
 TARGET = $(BUILD_DIR)/$(TARGET_NAME)
 
 # Define all source files (.cpp)
-SRCS = nLOSS.cpp ImageData.cpp FFTTools.cpp
+SRCS = nLOSS.cpp ImageData.cpp FFTTools.cpp FuncTools.cpp Utils.cpp
 # Create a list of object files (.o) with the build directory path prefix
 OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.o))
 # Define the dependency files (.d) which mirror the .o files
@@ -43,6 +43,8 @@ $(BUILD_DIR):
 $(TARGET): $(OBJS) | $(BUILD_DIR)
 	@echo "==> Linking $(TARGET_NAME)..."
 	$(CXX) $(OBJS) -o $(TARGET)
+	@echo "==> Cleaning intermediate build files..."
+	$(RM) $(OBJS) $(DEPS)
 
 # Pattern rule for compiling any source file (%.cpp) into an object file (%.o).
 # The compiler flags (-MMD -MP) in CXXFLAGS automatically generate the dependency files (.d)
@@ -57,8 +59,8 @@ $(BUILD_DIR)/%.o: %.cpp | $(BUILD_DIR)
 
 # Clean target: removes the entire build directory, including generated .o, .d, and the executable.
 clean:
-	@echo "==> Cleaning up build directory..."
-	$(RM) -r $(BUILD_DIR)
+	@echo "==> Cleaning intermediate build files..."
+	$(RM) $(OBJS) $(DEPS)
 
 # Phony targets prevent 'make' from confusing targets with similarly named files.
 .PHONY: all clean
