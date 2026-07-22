@@ -90,6 +90,14 @@ Triple PFC_mult(Triple& a, Complex& c){
     return a;
 }
 
+Triple PFC_div(Triple& a, Complex& c){
+    if (std::abs(c) == 0) return a;
+    a[0] = a[0] / c;
+    a[1] = a[1] / c;
+    a[2] = a[2] / c;
+    return a;
+}
+
 
 
 // Sort tools

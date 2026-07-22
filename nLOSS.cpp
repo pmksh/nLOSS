@@ -1047,7 +1047,14 @@ public:
         registerCommand("pixel-mult", 
             [this](const std::vector<std::string>& args) { handleFuncComplex(args, PFC_mult); },
             "multiplies by a complex constant a+bi",
-            "pixel-square (a,b)",
+            "pixel-mult(a,b)",
+            "-n"
+        );
+
+        registerCommand("pixel-div", 
+            [this](const std::vector<std::string>& args) { handleFuncComplex(args, PFC_div); },
+            "divides by a complex constant a+bi",
+            "pixel-div (a,b)",
             "-n"
         );
 
