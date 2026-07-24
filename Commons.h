@@ -14,3 +14,17 @@ using PixelFuncComplex  =       std::function<Triple(Triple&, Complex&)>;
 using WarpFunc          =       std::function<std::pair<double, double>(double, double)>;
 
 const double PI = acos(-1.0);
+
+
+struct frame{
+    int x;
+    int y;
+    int x_size;
+    int y_size;
+};
+
+struct pixel{
+    Complex r;
+    Complex g;
+    Complex b;
+};

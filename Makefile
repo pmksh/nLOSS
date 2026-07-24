@@ -14,7 +14,7 @@ TARGET_NAME = nLOSS
 TARGET = $(BUILD_DIR)/$(TARGET_NAME)
 
 # Define all source files (.cpp)
-SRCS = nLOSS.cpp ImageData.cpp FFTTools.cpp FuncTools.cpp Utils.cpp
+SRCS = nLOSS.cpp ImageData.cpp FFTTools.cpp FuncTools.cpp Utils.cpp FragTools.cpp
 # Create a list of object files (.o) with the build directory path prefix
 OBJS = $(addprefix $(BUILD_DIR)/, $(SRCS:.cpp=.o))
 # Define the dependency files (.d) which mirror the .o files

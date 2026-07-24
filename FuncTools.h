@@ -43,10 +43,12 @@ Triple PF_square(Triple& a);
 Triple PFC_mult(Triple& a, Complex& c);
 
 
-// divide bt constant
+// divide by constant
 Triple PFC_div(Triple& a, Complex& c);
 
 
+// add constant
+Triple PFC_add(Triple& a, Complex& c);
 
 
 // Sort tools

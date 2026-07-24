@@ -4,6 +4,7 @@
 #include "BmpTools.h"
 #include "FFTTools.h"
 #include "FuncTools.h"
+#include "FragTools.h"
 
 
 #include <iostream>
@@ -70,7 +71,14 @@ std::map<std::string, int> parseVector(const std::vector<std::string>& args, int
             }
         }
         else if (args[i] == "-fr" && allowed["-fr"]) {
-            catches["-fr"] = 1;
+            i++;
+            if (auto val = toInt(args[i])) {
+                if(*val > 0) catches["-fr"] = *val;
+            } else {
+                std::cout << "Error: -fr must be followed by a number"<<std::endl;;
+                catches["failed"] = 1;
+                return catches;
+            }
         }
         else {
             std::cout << "Error: argument " << args[i] <<" not allowed in this function"<<std::endl;;
@@ -362,7 +370,7 @@ private:
 
     // average each block
     void handleLevel(const std::vector<std::string>& args) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
@@ -374,29 +382,21 @@ private:
 
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
-        int tx = img.width / sx;
-        int ty = img.height / sy;
-        int rx = img.width % sx;
-        int ry = img.height % sy;
+        int fr = catches["-fr"];
 
-        for(int x1 = 0 ; x1 < tx ; x1++){
-            for(int y1 = 0 ; y1 < ty ; y1++){
-                levelHelper(img, x1 * sx, y1 * sy, sx, sy);
-            }
+        std::vector<struct frame> frames;
+
+        if (fr == 0) {
+            frames = GridFrag(img.height, img.width, sx, sy);
         }
-        if(rx > 0){
-            for(int y1 = 0 ; y1 < ty ; y1++){
-                levelHelper(img, tx * sx, y1 * sy, rx, sy);
-            }
+        else {
+            frames = nuFrag(img.height, img.width, fr, 0);
         }
-        if(ry > 0){
-            for(int x1 = 0 ; x1 < tx ; x1++){
-                levelHelper(img, x1 * sx, ty * sy, sx, ry);
-            }
+
+        for(struct frame f : frames){
+            levelHelper(img, f.x, f.y, f.x_size, f.y_size);
         }
-        if(ry > 0 && rx > 0){
-            levelHelper(img, tx * sx, ty * sy, rx, ry);
-        }
+
         std::cout << "Image Levelled" << std::endl;
     }
 
@@ -815,6 +815,7 @@ private:
         
         std::cout << "Applied pixel function" << std::endl;
     }
+    
     // Parse command line into command and arguments
     std::pair<std::string, std::vector<std::string>> parseInput(const std::string& input) {
         std::istringstream iss(input);
@@ -1055,6 +1056,13 @@ public:
             [this](const std::vector<std::string>& args) { handleFuncComplex(args, PFC_div); },
             "divides by a complex constant a+bi",
             "pixel-div (a,b)",
+            "-n"
+        );
+
+        registerCommand("pixel-add", 
+            [this](const std::vector<std::string>& args) { handleFuncComplex(args, PFC_add); },
+            "adds a complex constant a+bi",
+            "pixel-add (a,b)",
             "-n"
         );
 
