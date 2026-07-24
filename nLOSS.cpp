@@ -29,7 +29,7 @@ std::map<std::string, int> parseVector(const std::vector<std::string>& args, int
 
     std::map<std::string, int> catches = {{"failed", 0}, {"-n", 0}, {"-s", 0}, {"-sx", 0}, {"-sy", 0}, {"-fr", 0}};
 
-    for (int i = start; i < args.size(); ++i) {
+    for (int i = start; i < (int) args.size(); ++i) {
         if (args[i] == "-n" && allowed["-n"]) {
             i++;
             if (auto val = toInt(args[i])) {
@@ -150,12 +150,21 @@ private:
     
     // Exit the Program
     void handleExit(const std::vector<std::string>& args) {
+        if (!args.empty()){
+            std::cout << "No arguments allowed for this function" << std::endl;
+            return;
+        }
         std::cout << "Goodbye!" << std::endl;
         running = false;
     }
     
     // Usage guide 
     void handleHelp(const std::vector<std::string>& args) {
+        if (!args.empty()){
+            std::cout << "No arguments allowed for this function" << std::endl;
+            return;
+        }
+
         std::cout << "Available commands:" << std::endl;
         for (const auto& [name, cmd] : commands) {
             std::cout << "  " << name << " - " << cmd.description << std::endl;
@@ -335,27 +344,36 @@ private:
 
     // Apply Multiplicative filter
     void handleFilter(const std::vector<std::string>& args, Complex (* filter)(double, double)) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
-        int s = catches["-s"];
 
         if (!img.isLoaded) {
             std::cerr << "Error: No image loaded" << std::endl;
             return;
         }
 
-        if(s == 0) {
-            std::cerr << "Error: Size not given" << std::endl;
-            return;
+        int sx = catches["-sx"] ? catches["-sx"] : img.width;
+        int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        int fr = catches["-fr"];
+
+        std::vector<struct frame> frames;
+        if (fr == 0) {
+            frames = GridFrag(img.height, img.width, sx, sy);
         }
+        else {
+            frames = nuFrag(img.height, img.width, fr, 0);
+        }
+
         
-        for (int y = 0; y < img.height; y++) {
-            for (int x = 0; x < img.width; x++) {
-                img.pixels[y][x][0] = img.pixels[y][x][0] * filter(x/img.height, y/(img.height));
-                img.pixels[y][x][1] = img.pixels[y][x][1] * filter(x/img.height, y/(img.height));
-                img.pixels[y][x][2] = img.pixels[y][x][2] * filter(x/img.height, y/(img.height));
+        for(struct frame f : frames){
+            for (int y = 0; y < f.y_size; y++) {
+                for (int x = 0; x < f.x_size; x++) {
+                    img.pixels[f.y + y][f.x + x][0] = img.pixels[f.y + y][f.x + x][0] * filter(x / f.x_size, y / f.y_size);
+                    img.pixels[f.y + y][f.x + x][1] = img.pixels[f.y + y][f.x + x][1] * filter(x / f.x_size, y / f.y_size);
+                    img.pixels[f.y + y][f.x + x][2] = img.pixels[f.y + y][f.x + x][2] * filter(x / f.x_size, y / f.y_size);
+                }
             }
         }
         
@@ -549,7 +567,7 @@ private:
 
     // Apply sort (breaks up pixels)
     void handleSortDisjoint(const std::vector<std::string>& args, SortFunc func) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
         std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
@@ -565,121 +583,50 @@ private:
         }
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
-        int tx = img.width / sx;
-        int ty = img.height / sy;
-        int rx = img.width % sx;
-        int ry = img.height % sy;
+        int fr = catches["-fr"];
+
+        std::vector<struct frame> frames;
+        if (fr == 0) {
+            frames = GridFrag(img.height, img.width, sx, sy);
+        }
+        else {
+            frames = nuFrag(img.height, img.width, fr, 0);
+        }
 
         bool flag = false;
 
-        
-        if (direction == "h" || direction == "d") {
-            flag = true;
+        for(struct frame f : frames){
 
-            std::vector<Complex> strip_0(sy);
-            std::vector<Complex> strip_1(sy);
-            std::vector<Complex> strip_2(sy);
-            for(int x2 = 0 ; x2 < img.width ; x2++){
-                for(int y1 = 0 ; y1 < ty ; y1++){
+            if (direction == "h" || direction == "d") {
+                flag = true;
+
+                for (int x0 = f.x ; x0 < f.x + f.x_size; x0++){
                     
-                    for (int y = 0 ; y < sy; y++) {
-                        int y2 = y1 * sy + y;
-                        strip_0[y] = img.pixels[y2][x2][0];
-                        strip_1[y] = img.pixels[y2][x2][1];
-                        strip_2[y] = img.pixels[y2][x2][2];
-                    }
-                    
-                    std::sort(strip_0.begin(), strip_0.end(), func);
-                    std::sort(strip_1.begin(), strip_1.end(), func);
-                    std::sort(strip_2.begin(), strip_2.end(), func);
-
-                    for (int y = 0 ; y < sy ; y++) {
-                        int y2 = y1 * sy + y;
-                        img.pixels[y2][x2][0] = strip_0[y];
-                        img.pixels[y2][x2][1] = strip_1[y];
-                        img.pixels[y2][x2][2] = strip_2[y];
-                    }
-                }
-
-                if(ry > 0){
-
-                    std::vector<Complex> rem_strip_0(ry);
-                    std::vector<Complex> rem_strip_1(ry);
-                    std::vector<Complex> rem_strip_2(ry);
-
-                    for (int y = 0 ; y < ry; y++) {
-                        int y2 = img.width - ry + y;
-                        rem_strip_0[y] = img.pixels[y2][x2][0];
-                        rem_strip_1[y] = img.pixels[y2][x2][1];
-                        rem_strip_2[y] = img.pixels[y2][x2][2];
-                    }
-
-                    std::sort(rem_strip_0.begin(), rem_strip_0.end(), func);
-                    std::sort(rem_strip_1.begin(), rem_strip_1.end(), func);
-                    std::sort(rem_strip_2.begin(), rem_strip_2.end(), func);
-
-                    for (int y = 0 ; y < ry ; y++) {
-                        int y2 = img.width - ry + y;
-                        img.pixels[y2][x2][0] = rem_strip_0[y];
-                        img.pixels[y2][x2][1] = rem_strip_1[y];
-                        img.pixels[y2][x2][2] = rem_strip_2[y];
+                    for (int color = 0; color < 3; color++){
+                        std::vector<Complex> strip(f.y_size);
+                        for (int i = 0; i < f.y_size; i++) strip[i] = img.pixels[f.y + i][x0][color];
+                        std::sort(strip.begin(), strip.end(), func);
+                        for (int i = 0; i < f.y_size; i++) img.pixels[f.y + i][x0][color] = strip[i];
                     }
                 }
             }
-        } if (direction == "v" || direction == "d") {
-            flag = true;
 
-            std::vector<Complex> strip_0(sx);
-            std::vector<Complex> strip_1(sx);
-            std::vector<Complex> strip_2(sx);
-            for(int y2 = 0 ; y2 < img.width ; y2++){
-                for(int x1 = 0 ; x1 < tx ; x1++){
-                    
-                    for (int x = 0 ; x < sx; x++) {
-                        int x2 = x1 * sx + x;
-                        strip_0[x] = img.pixels[y2][x2][0];
-                        strip_1[x] = img.pixels[y2][x2][1];
-                        strip_2[x] = img.pixels[y2][x2][2];
-                    }
+            if (direction == "v" || direction == "d") {
+                flag = true;
 
-                    std::sort(strip_0.begin(), strip_0.end(), func);
-                    std::sort(strip_1.begin(), strip_1.end(), func);
-                    std::sort(strip_2.begin(), strip_2.end(), func);
+                for (int y0 = f.y ; y0 < f.y + f.y_size; y0++){
 
-                    for (int x = 0 ; x < sx ; x++) {
-                        int x2 = x1 * sx + x;
-                        img.pixels[y2][x2][0] = strip_0[x];
-                        img.pixels[y2][x2][1] = strip_1[x];
-                        img.pixels[y2][x2][2] = strip_2[x];
-                    }
-                }
-
-                if(rx > 0){
-
-                    std::vector<Complex> rem_strip_0(rx);
-                    std::vector<Complex> rem_strip_1(rx);
-                    std::vector<Complex> rem_strip_2(rx);
-
-                    for (int x = 0 ; x < rx; x++) {
-                        int x2 = img.width - rx + x;
-                        rem_strip_0[x] = img.pixels[y2][x2][0];
-                        rem_strip_1[x] = img.pixels[y2][x2][1];
-                        rem_strip_2[x] = img.pixels[y2][x2][2];
-                    }
-
-                    std::sort(rem_strip_0.begin(), rem_strip_0.end(), func);
-                    std::sort(rem_strip_1.begin(), rem_strip_1.end(), func);
-                    std::sort(rem_strip_2.begin(), rem_strip_2.end(), func);
-
-                    for (int x = 0 ; x < rx ; x++) {
-                        int x2 = img.width - rx + x;
-                        img.pixels[y2][x2][0] = rem_strip_0[x];
-                        img.pixels[y2][x2][1] = rem_strip_1[x];
-                        img.pixels[y2][x2][2] = rem_strip_2[x];
+                    for (int color = 0; color < 3; color++){
+                        std::vector<Complex> strip(f.x_size);
+                        for (int i = 0; i < f.x_size; i++) strip[i] = img.pixels[y0][f.x + i][color];
+                        std::sort(strip.begin(), strip.end(), func);
+                        for (int i = 0; i < f.x_size; i++) img.pixels[y0][f.x + i][color] = strip[i];
                     }
                 }
             }
         }
+
+        
         if (!flag) {
             std::cerr << "Error: Invalid direction. Use 'd', 'h' or 'v'" << std::endl;
         }

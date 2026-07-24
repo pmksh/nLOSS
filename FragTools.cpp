@@ -56,7 +56,9 @@ struct CompareNode {
 std::vector<struct frame> nuFrag (int height, int width, int seed, int type){
 
     // for now type is useless
-    type = 0;
+    if (type == 1){
+        type = 0;
+    }
 
 
     std::vector<std::vector<int>> filled(width, std::vector<int>(height, 0));
@@ -81,7 +83,6 @@ std::vector<struct frame> nuFrag (int height, int width, int seed, int type){
     std::priority_queue<Node, std::vector<Node>, CompareNode> pq;
 
     pq.push({0, 0, 0});   // initial node (priority = 0, x = 0, y = 0)
-    int count = 0;
 
     while (!pq.empty()) {
         Node cur = pq.top();
