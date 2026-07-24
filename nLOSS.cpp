@@ -217,7 +217,7 @@ private:
 
     // Flip
     void handleFlip(const std::vector<std::string>& args) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
         std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
@@ -227,28 +227,51 @@ private:
             return;
         }
         
-        std::string direction = "horizontal";
+        std::string direction = "h";
         if (!args.empty()) {
             direction = args[0];
         }
+
+        int sx = catches["-sx"] ? catches["-sx"] : img.width;
+        int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        int fr = catches["-fr"];
+
+        std::vector<struct frame> frames;
+        if (fr == 0) {
+            frames = GridFrag(img.height, img.width, sx, sy);
+        }
+        else {
+            frames = nuFrag(img.height, img.width, fr, 0);
+        }
+
+
         
-        if (direction == "horizontal" || direction == "h") {
-            // Flip horizontally
-            for (int y = 0; y < img.height; y++) {
-                for (int x = 0; x < img.width / 2; x++) {
-                    // Swap pixels
-                    std::swap(img.pixels[y][x], img.pixels[y][img.width - 1 - x]);
+        if (direction == "h") {
+
+            for (struct frame f : frames){
+                for (int y = 0; y < f.y_size; y++) {
+                    for (int x = 0; x < f.x_size / 2; x++) {
+                        
+                        std::swap(img.pixels[f.y + y][f.x+ x], img.pixels[f.y + y][f.x + f.x_size - 1 - x]);
+                    }
                 }
             }
+            
             std::cout << "Image flipped horizontally" << std::endl;
-        } else if (direction == "vertical" || direction == "v") {
-            // Flip vertically
-            for (int y = 0; y < img.height / 2; y++) {
-                std::swap(img.pixels[y], img.pixels[img.height - 1 - y]);
+        } else if (direction == "v") {
+            
+            for (struct frame f : frames){
+                for (int x = 0; x < f.x_size; x++) {
+                    for (int y = 0; y < f.y_size / 2; y++) {
+                        
+                        std::swap(img.pixels[f.y + y][f.x + x], img.pixels[f.y + f.y_size - 1 - y][f.x + x]);
+                    }
+                }
             }
+
             std::cout << "Image flipped vertically" << std::endl;
         } else {
-            std::cerr << "Error: Invalid direction. Use 'horizontal' or 'vertical'" << std::endl;
+            std::cerr << "Error: Invalid direction. Use 'h' for 'horizontal' or 'v' for 'vertical'" << std::endl;
         }
     }
 
@@ -475,8 +498,8 @@ private:
 
     // Apply clamp
     void handleClamp(const std::vector<std::string>& args) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
-        std::map<std::string, int> catches = parseVector(args, 1, allowed);
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
+        std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -485,10 +508,6 @@ private:
             return;
         }
 
-        std::string direction = "horizontal";
-        if (!args.empty()) {
-            direction = args[0];
-        }
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
         int fr = catches["-fr"];
@@ -501,25 +520,20 @@ private:
             frames = nuFrag(img.height, img.width, fr, 0);
         }
         
+        for(struct frame f : frames){
 
-        for (int y1 = img.height; y1 > 0; y1 -= sy) {
-            int y0 = std::max(0, y1 - sy);
+            double maxAbs[3] = {255.0, 255.0, 255.0};
 
-            for (int x1 = img.width; x1 > 0; x1 -= sx) {
-                int x0 = std::max(0, x1 - sx);
-
-                double maxAbs[3] = {255.0, 255.0, 255.0};
-
-                for (int y = y0; y < y1; y++) {
-                    for (int x = x0; x < x1; x++) {
+                for (int y = f.y; y < f.y + f.y_size; y++) {
+                    for (int x = f.x; x < f.x + f.x_size; x++) {
                         for (int c = 0; c < 3; c++) {
                             maxAbs[c] = std::max(maxAbs[c], std::abs(img.pixels[y][x][c]));
                         }
                     }
                 }
 
-                for (int y = y0; y < y1; y++) {
-                    for (int x = x0; x < x1; x++) {
+                for (int y = f.y; y < f.y + f.y_size; y++) {
+                    for (int x = f.x; x < f.x + f.x_size; x++) {
                         for (int c = 0; c < 3; c++) {
                             if (maxAbs[c] != 0.0) {
                                 img.pixels[y][x][c] =
@@ -528,7 +542,6 @@ private:
                         }
                     }
                 }
-            }
         }
 
         std::cout << "Image clamped" << std::endl;
