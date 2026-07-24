@@ -491,6 +491,15 @@ private:
         }
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        int fr = catches["-fr"];
+
+        std::vector<struct frame> frames;
+        if (fr == 0) {
+            frames = GridFrag(img.height, img.width, sx, sy);
+        }
+        else {
+            frames = nuFrag(img.height, img.width, fr, 0);
+        }
         
 
         for (int y1 = img.height; y1 > 0; y1 -= sy) {
@@ -670,7 +679,7 @@ private:
     
     // Apply warp
     void handleWarp(const std::vector<std::string>& args, WarpFunc invFunc) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", true}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
@@ -680,15 +689,18 @@ private:
             return;
         }
 
-        // int sx = catches["-sx"] ? catches["-sx"] : img.width;
-        // int sy = catches["-sy"] ? catches["-sy"] : img.height;
-        // int tx = img.width / sx;
-        // int ty = img.height / sy;
-        // int rx = img.width % sx;
-        // int ry = img.height % sy;
+        int sx = catches["-sx"] ? catches["-sx"] : img.width;
+        int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        int s = catches["-s"] ? catches["-s"] : 0;
+        int fr = catches["-fr"];
 
-        int s = catches["-s"] ? catches["-sx"] : 0;
-
+        std::vector<struct frame> frames;
+        if (fr == 0) {
+            frames = GridFrag(img.height, img.width, sx, sy);
+        }
+        else {
+            frames = nuFrag(img.height, img.width, fr, 0);
+        }
 
         int fx, fy, fx1, fy1;
         double nx, ny, rx, ry;
@@ -697,47 +709,51 @@ private:
             std::vector<std::array<Complex,3>>(img.width)
         );
         
-        for (int y = 0; y < img.height; y++) {
-            for (int x = 0; x < img.width; x++) {
-                Triple a;
+        for(struct frame f : frames){
 
-                double normX = static_cast<double>(x) / (img.width - 1);
-                double normY = static_cast<double>(y) / (img.height - 1);
-                std::pair<double, double> tmp = invFunc(normX , normY);
-                nx = tmp.first;
-                ny = tmp.second;
-                nx *= (img.width - 1);
-                ny *= (img.height - 1);
 
-                fx = std::clamp((int)std::floor(nx), 0, img.width - 1);
-                fy = std::clamp((int)std::floor(ny), 0, img.height - 1);
+            for (int y = 0; y < f.y_size; y++){
+                for (int x = 0; x < f.x_size; x++){
+                    Triple a;
 
-                fx1 = std::clamp(fx + 1, 0, img.width - 1);
-                fy1 = std::clamp(fy + 1, 0, img.height - 1);
+                    double normX = static_cast<double>(x) / (f.x_size);
+                    double normY = static_cast<double>(y) / (f.y_size);
+                    std::pair<double, double> tmp = invFunc(normX , normY);
+                    nx = tmp.first;
+                    ny = tmp.second;
+                    nx *= (f.x_size- 1);
+                    ny *= (f.y_size - 1);
 
-                rx = nx - (double) std::floor(nx);
-                ry = ny - (double) std::floor(ny);
+                    fx = std::clamp((int)std::floor(nx), 0 , f.x_size - 1);
+                    fy = std::clamp((int)std::floor(ny), 0, f.y_size- 1);
 
-                if (s == 1 ) {
-                    newPixels[y][x][0] = (1-ry) * (1-rx) * img.pixels[fy][fx][0] + 
-                                        (ry) * (1-rx) * img.pixels[fy1][fx][0] + 
-                                        (1-ry) * (rx) * img.pixels[fy][fx1][0] + 
-                                        (ry) * (rx) * img.pixels[fy1][fx1][0];
+                    fx1 = std::clamp(fx + 1, 0, f.x_size - 1);
+                    fy1 = std::clamp(fy + 1, 0, f.y_size - 1);
 
-                    newPixels[y][x][1] = (1-ry) * (1-rx) * img.pixels[fy][fx][1] + 
-                                        (ry) * (1-rx) * img.pixels[fy1][fx][1] + 
-                                        (1-ry) * (rx) * img.pixels[fy][fx1][1] + 
-                                        (ry) * (rx) * img.pixels[fy1][fx1][1];
+                    rx = nx - (double) std::floor(nx);
+                    ry = ny - (double) std::floor(ny);
 
-                    newPixels[y][x][2] = (1-ry) * (1-rx) * img.pixels[fy][fx][2] + 
-                                        (ry) * (1-rx) * img.pixels[fy1][fx][2] + 
-                                        (1-ry) * (rx) * img.pixels[fy][fx1][2] + 
-                                        (ry) * (rx) * img.pixels[fy1][fx1][2];
-                }
-                else {
-                    newPixels[y][x][0] = img.pixels[fy][fx][0];
-                    newPixels[y][x][1] = img.pixels[fy][fx][1];
-                    newPixels[y][x][2] = img.pixels[fy][fx][2];
+                    if (s == 1) {
+                        newPixels[f.y + y][f.x + x][0] = (1-ry) * (1-rx) * img.pixels[f.y + fy][f.x + fx][0] + 
+                                            (ry) * (1-rx) * img.pixels[f.y + fy1][f.x + fx][0] + 
+                                            (1-ry) * (rx) * img.pixels[f.y + fy][f.x + fx1][0] + 
+                                            (ry) * (rx) * img.pixels[f.y + fy1][f.x + fx1][0];
+
+                        newPixels[f.y + y][f.x + x][1] = (1-ry) * (1-rx) * img.pixels[f.y + fy][f.x + fx][1] + 
+                                            (ry) * (1-rx) * img.pixels[f.y + fy1][f.x + fx][1] + 
+                                            (1-ry) * (rx) * img.pixels[f.y + fy][f.x + fx1][1] + 
+                                            (ry) * (rx) * img.pixels[f.y + fy1][f.x + fx1][1];
+
+                        newPixels[f.y + y][f.x + x][2] = (1-ry) * (1-rx) * img.pixels[f.y + fy][f.x + fx][2] + 
+                                            (ry) * (1-rx) * img.pixels[f.y + fy1][f.x + fx][2] + 
+                                            (1-ry) * (rx) * img.pixels[f.y + fy][f.x + fx1][2] + 
+                                            (ry) * (rx) * img.pixels[f.y + fy1][f.x + fx1][2];
+                    }
+                    else {
+                        newPixels[f.y + y][f.x + x][0] = img.pixels[f.y + fy][f.x + fx][0];
+                        newPixels[f.y + y][f.x + x][1] = img.pixels[f.y + fy][f.x + fx][1];
+                        newPixels[f.y + y][f.x + x][2] = img.pixels[f.y + fy][f.x + fx][2];
+                    }
                 }
             }
         }
