@@ -385,7 +385,6 @@ private:
         int fr = catches["-fr"];
 
         std::vector<struct frame> frames;
-
         if (fr == 0) {
             frames = GridFrag(img.height, img.width, sx, sy);
         }
@@ -402,7 +401,7 @@ private:
 
     // Apply transform
     void handleTransform(const std::vector<std::string>& args, TransformFunc func) {
-        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", false}};
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
         std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
@@ -419,66 +418,44 @@ private:
         
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
+        int fr = catches["-fr"];
+
+        std::vector<struct frame> frames;
+        if (fr == 0) {
+            frames = GridFrag(img.height, img.width, sx, sy);
+        }
+        else {
+            frames = nuFrag(img.height, img.width, fr, 0);
+        }
 
         bool flag = false;
 
-        if (direction == "h" || direction == "d") {
-            flag = true;
+        for(struct frame f : frames){
 
-            for (int x = 0; x < img.width; x++) {
-                for (int y1 = img.height; y1 > 0; y1 -= sy) {
-                    int y0 = std::max(0, y1 - sy);
-                    int len = y1 - y0;
+            if (direction == "h" || direction == "d") {
+                flag = true;
 
-                    std::vector<Complex> strip0(len);
-                    std::vector<Complex> strip1(len);
-                    std::vector<Complex> strip2(len);
-
-                    for (int i = 0; i < len; i++) {
-                        strip0[i] = img.pixels[y0 + i][x][0];
-                        strip1[i] = img.pixels[y0 + i][x][1];
-                        strip2[i] = img.pixels[y0 + i][x][2];
-                    }
-
-                    strip0 = func(strip0);
-                    strip1 = func(strip1);
-                    strip2 = func(strip2);
-
-                    for (int i = 0; i < len; i++) {
-                        img.pixels[y0 + i][x][0] = strip0[i];
-                        img.pixels[y0 + i][x][1] = strip1[i];
-                        img.pixels[y0 + i][x][2] = strip2[i];
+                for (int x0 = f.x ; x0 < f.x + f.x_size; x0++){
+                    
+                    for (int color = 0; color < 3; color++){
+                        std::vector<Complex> strip(f.y_size);
+                        for (int i = 0; i < f.y_size; i++) strip[i] = img.pixels[f.y + i][x0][color];
+                        strip = func(strip);
+                        for (int i = 0; i < f.y_size; i++) img.pixels[f.y + i][x0][color] = strip[i];
                     }
                 }
             }
-        }
 
-        if (direction == "v" || direction == "d") {
-            flag = true;
+            if (direction == "v" || direction == "d") {
+                flag = true;
 
-            for (int y = 0; y < img.height; y++) {
-                for (int x1 = img.width; x1 > 0; x1 -= sx) {
-                    int x0 = std::max(0, x1 - sx);
-                    int len = x1 - x0;
+                for (int y0 = f.y ; y0 < f.y + f.y_size; y0++){
 
-                    std::vector<Complex> strip0(len);
-                    std::vector<Complex> strip1(len);
-                    std::vector<Complex> strip2(len);
-
-                    for (int i = 0; i < len; i++) {
-                        strip0[i] = img.pixels[y][x0 + i][0];
-                        strip1[i] = img.pixels[y][x0 + i][1];
-                        strip2[i] = img.pixels[y][x0 + i][2];
-                    }
-
-                    strip0 = func(strip0);
-                    strip1 = func(strip1);
-                    strip2 = func(strip2);
-
-                    for (int i = 0; i < len; i++) {
-                        img.pixels[y][x0 + i][0] = strip0[i];
-                        img.pixels[y][x0 + i][1] = strip1[i];
-                        img.pixels[y][x0 + i][2] = strip2[i];
+                    for (int color = 0; color < 3; color++){
+                        std::vector<Complex> strip(f.x_size);
+                        for (int i = 0; i < f.x_size; i++) strip[i] = img.pixels[y0][f.x + i][color];
+                        strip = func(strip);
+                        for (int i = 0; i < f.x_size; i++) img.pixels[y0][f.x + i][color] = strip[i];
                     }
                 }
             }
