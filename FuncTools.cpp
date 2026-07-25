@@ -125,3 +125,31 @@ std::pair<double, double> warp_sqrt(double x, double y){
 
     return std::pair<double, double>(std::sqrt(x), std::sqrt(y));
 }
+
+
+
+// two-pixel functions
+
+Triple D_add(Triple& a, Triple& b) {
+    Triple c;
+    c[0] = a[0] + b[0];
+    c[1] = a[1] + b[1];
+    c[2] = a[2] + b[2];
+    return c;
+}
+
+Triple D_mult(Triple& a, Triple& b) {
+    Triple c;
+    c[0] = a[0] * b[0];
+    c[1] = a[1] * b[1];
+    c[2] = a[2] * b[2];
+    return c;
+}
+
+Triple D_div(Triple& a, Triple& b) {
+    Triple c;
+    c[0] = (std::abs(b[0]) < 0.0001) ? Complex(10000,0) * a[0] : a[0] / b[0];
+    c[1] = (std::abs(b[1]) < 0.0001) ? Complex(10000,0) * a[1] : a[1] / b[1];
+    c[2] = (std::abs(b[2]) < 0.0001) ? Complex(10000,0) * a[2] : a[2] / b[2];
+    return c;
+}

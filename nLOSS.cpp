@@ -33,7 +33,7 @@ std::map<std::string, int> parseVector(const std::vector<std::string>& args, int
         if (args[i] == "-n" && allowed["-n"]) {
             i++;
             if (auto val = toInt(args[i])) {
-                if(*val <= 15) catches["-n"] = *val;
+                if(*val < N_images) catches["-n"] = *val;
             } else {
                 std::cout << "Error: -n must be followed by a number"<<std::endl;;
                 catches["failed"] = 1;
@@ -102,7 +102,7 @@ private:
     
     std::map<std::string, Command> commands;    // Array of commands
     bool running;                               // Is running
-    ImageData currentImage[16];                 // Store the current loaded image
+    ImageData currentImage[N_images];                 // Store the current loaded image
     
     // Command handlers
 
@@ -768,6 +768,76 @@ private:
         
         std::cout << "Applied pixel function" << std::endl;
     }
+
+    // Apply descartian function
+    void handleDescartian(const std::vector<std::string>& args, TwoPixelFunc func) {
+        std::map<std::string, bool> allowed = {{"-n", false}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
+        if (catches["failed"]) return;
+
+
+
+        int n1, n2, n3;
+
+        if (args.size() < 1 || !parseTripleInt(args[0], n1, n2, n3)) {
+            std::cerr << "Error: please input integers (n1,n2,n3)" << std::endl;
+            return;
+        }
+
+        if (n1 >= N_images || n2 >= N_images || n3 >= N_images) {
+            std::cerr << "Error: each of (n1,n2,n3) must be less than 16" << std::endl;
+            return;
+        }
+        
+
+        if (!currentImage[n1].isLoaded) {
+            std::cerr << "Error: No image loaded for n1" << std::endl;
+            return;
+        }
+
+        if (!currentImage[n2].isLoaded) {
+            std::cerr << "Error: No image loaded for n2" << std::endl;
+            return;
+        }
+
+        if (currentImage[n1].height != currentImage[n2].height || currentImage[n1].width != currentImage[n2].width) {
+            std::cerr << "Error: sizes for n1 and n2 do not match" << std::endl;
+            return;
+        }
+
+        int width = currentImage[n1].width;
+        int height = currentImage[n1].height;
+
+        ImageData img;
+
+        img.allocate(width, height);
+
+        
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Triple a1, a2, a3;
+                
+                a1[0] = currentImage[n1].pixels[y][x][0];
+                a1[1] = currentImage[n1].pixels[y][x][1];
+                a1[2] = currentImage[n1].pixels[y][x][2];
+                
+                a2[0] = currentImage[n2].pixels[y][x][0];
+                a2[1] = currentImage[n2].pixels[y][x][1];
+                a2[2] = currentImage[n2].pixels[y][x][2];
+
+                a3 = func(a1, a2);
+
+                img.pixels[y][x][0] = a3[0];
+                img.pixels[y][x][1] = a3[1];
+                img.pixels[y][x][2] = a3[2];
+                
+            }
+        }
+
+        currentImage[n3] = img;
+        
+        std::cout << "Applied descartian function" << std::endl;
+    }
     
     // Parse command line into command and arguments
     std::pair<std::string, std::vector<std::string>> parseInput(const std::string& input) {
@@ -848,7 +918,7 @@ public:
             [this](const std::vector<std::string>& args) { handleFlip(args); },
             "Flip image horizontally or vertically",
             "flip [horizontal | vertical]",
-            "-n"
+            "-n -fr"
         );
 
         registerCommand("abs", 
@@ -869,7 +939,7 @@ public:
             [this](const std::vector<std::string>& args) { handleLevel(args); },
             "Averages each square",
             "level -sx [int] -sy [int]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("cutoff", 
@@ -883,77 +953,77 @@ public:
             [this](const std::vector<std::string>& args) { handleTransform(args, fft); },
             "Fourier Transforms image horizontally or vertically",
             "fft [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("ifft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, ifft); },
             "Inverse Fourier Transforms image horizontally or vertically",
             "ifft [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("dft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dft); },
             "Fourier Transforms image horizontally or vertically",
             "dft [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("idft", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idft); },
             "Inverse Fourier Transforms image horizontally or vertically",
             "idft [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("dct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dct2); },
             "Cosine Transforms real part of image horizontally or vertically",
             "dct [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("idct", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idct2); },
             "Inverse Cosine Transforms real part of image horizontally or vertically",
             "idct [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("dst", 
             [this](const std::vector<std::string>& args) { handleTransform(args, dst2); },
             "Sine Transforms real part of image horizontally or vertically",
             "dst [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("idst", 
             [this](const std::vector<std::string>& args) { handleTransform(args, idst2); },
             "Inverse Sine Transforms real part of image horizontally or vertically",
             "idst [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("wht", 
             [this](const std::vector<std::string>& args) { handleTransform(args, wht); },
             "Walsh-Hadamard Transforms image horizontally or vertically",
             "wht [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("iwht", 
             [this](const std::vector<std::string>& args) { handleTransform(args, iwht); },
             "Inverse Walsh-Hadamard Transforms image horizontally or vertically",
             "iwht [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("sort", 
             [this](const std::vector<std::string>& args) { handleSortDisjoint(args, sort_v1); },
             "Sort colors image horizontally or vertically",
             "sort [h | v | d]",
-            "-n -sx -sy"
+            "-n -sx -sy -fr"
         );
 
         registerCommand("fit", 
@@ -981,14 +1051,14 @@ public:
             [this](const std::vector<std::string>& args) { handleWarp(args, warp_square); },
             "takes (x,y) -> (sqrt(x),sqrt(y)), -s 1 determines blending",
             "warp-sqrt",
-            "-n -s"
+            "-n -s -sx -sy -fr"
         );
 
         registerCommand("warp-square", 
             [this](const std::vector<std::string>& args) { handleWarp(args, warp_sqrt); },
             "takes (x,y) -> (x^2,y^2), -s 1 determines blending",
             "warp-square",
-            "-n -s"
+            "-n -s -sx -sy -fr"
         );
 
         registerCommand("pixel-square", 
@@ -1019,11 +1089,32 @@ public:
             "-n"
         );
 
+        registerCommand("desc-add", 
+            [this](const std::vector<std::string>& args) { handleDescartian(args, D_add); },
+            "adds img[n1] + img[n2] -> img[n3]",
+            "desc-add (n1,n2,n3)",
+            "NONE"
+        );
+
+        registerCommand("desc-mult", 
+            [this](const std::vector<std::string>& args) { handleDescartian(args, D_mult); },
+            "adds img[n1] * img[n2] -> img[n3]",
+            "desc-mult (n1,n2,n3)",
+            "NONE"
+        );
+
+        registerCommand("desc-div", 
+            [this](const std::vector<std::string>& args) { handleDescartian(args, D_div); },
+            "adds img[n1] / img[n2] -> img[n3]",
+            "desc-div (n1,n2,n3)",
+            "NONE"
+        );
+
         registerCommand("clamp", 
             [this](const std::vector<std::string>& args) { handleClamp(args); },
-            "clamps each rectangle within max values",
+            "clamps each frame within max values",
             "clamp",
-            "-n -sx, -sy"
+            "-n -sx, -sy -fr"
         );
     }
     

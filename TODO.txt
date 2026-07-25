@@ -7,6 +7,10 @@ add ycmk
 image algebra
 improve flag parser architecture
 naming conventions
-add -sx -sy to warp
 clamp to [0,1] isnteead of (0,255)
 non-uniform fragmentation different random types.
+add power n
+kernel
+edge detection
+KMM / other compression types
+add resize

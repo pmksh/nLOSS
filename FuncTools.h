@@ -63,3 +63,14 @@ bool sort_v1(const Complex& a, const Complex& b);
 std::pair<double, double> warp_square(double x, double y);
 
 std::pair<double, double> warp_sqrt(double x, double y);
+
+
+// two-pixel functions
+
+Triple D_add(Triple& a, Triple& b);
+
+
+Triple D_mult(Triple& a, Triple& b);
+
+
+Triple D_div(Triple& a, Triple& b);
