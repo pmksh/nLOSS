@@ -21,7 +21,7 @@ using WarpFunc          =       std::function<std::pair<double, double>(double, 
 using FilterFunc        =       std::function<Complex(double, double)>;
 
 const double PI = acos(-1.0);
-
+const double E = 2.71828182845;
 
 
 struct frame{

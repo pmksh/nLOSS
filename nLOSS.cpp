@@ -396,9 +396,9 @@ private:
     }
 
     // Apply Multiplicative filter
-    void handleFilter(const std::vector<std::string>& args, FilterFunc filter) {
+    void handleFilter(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
-        std::map<std::string, int> catches = parseVector(args, 0, allowed);
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
         if (catches["failed"]) return;
         ImageData& img = currentImage[catches["-n"]];
 
@@ -406,6 +406,20 @@ private:
             std::cerr << "Error: No image loaded" << std::endl;
             return;
         }
+
+        if (args.size() < 1) {
+            std::cerr << "Error: please input filter name" << std::endl;
+            return;
+        }
+
+
+        if (!hasFilter(args[0])) {
+            std::cerr << "Error: please input valid filter name" << std::endl;
+            return;
+        }
+
+        FilterFunc filter = getFilter(args[0]);
+
 
         int sx = catches["-sx"] ? catches["-sx"] : img.width;
         int sy = catches["-sy"] ? catches["-sy"] : img.height;
@@ -430,7 +444,7 @@ private:
             }
         }
         
-        std::cout << "Cutoff Applied" << std::endl;
+        std::cout << "Filter Applied" << std::endl;
     }
 
     // handle pixel functions
@@ -982,7 +996,13 @@ private:
     
 public:
     CLI() : running(true) {
+
+        // initialize filters
+
+        initFilter();
+
         // Register commands
+
         registerCommand("load", 
             [this](const std::vector<std::string>& args) { handleLoad(args); },
             "Load image from BMP file into 3D RGB array",
@@ -1256,10 +1276,10 @@ public:
             "-n"
         );
 
-        registerCommand("filter-radius", 
-            [this](const std::vector<std::string>& args) { handleFilter(args, Filter_radius); },
-            "filters with x^2 + y^2",
-            "filter-radius",
+        registerCommand("filter", 
+            [this](const std::vector<std::string>& args) { handleFilter(args); },
+            "filters according to name",
+            "filter [name]",
             "-n -sx, -sy -fr"
         );
     }
