@@ -5,6 +5,7 @@
 #include "FFTTools.h"
 #include "FuncTools.h"
 #include "FragTools.h"
+#include "FilterTools.h"
 
 
 #include <iostream>
@@ -158,6 +159,58 @@ private:
         running = false;
     }
     
+    // average each block
+    void handleResize(const std::vector<std::string>& args) {
+        std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
+        if (catches["failed"]) return;
+        ImageData& img = currentImage[catches["-n"]];
+
+        if (!img.isLoaded) {
+            std::cerr << "Error: No image loaded" << std::endl;
+            return;
+        }
+
+        
+        int newHeight, newWidth;
+
+        if (args.size() < 1 || !parseDoubleInt(args[0], newHeight, newWidth)) {
+            std::cerr << "Error: please input integers (h,w)" << std::endl;
+            return;
+        }
+
+        if ( newHeight <= 0 || newWidth <= 0) {
+            std::cerr << "Error: please input positive integers (h,w)" << std::endl;
+            return;
+        }
+
+        int oldWidth  = img.width;
+        int oldHeight = img.height;
+
+        if (oldWidth == newWidth && oldHeight == newHeight) return;
+
+        ImageData newImg;
+        newImg.allocate(newWidth, newHeight);
+
+        float scaleX = static_cast<float>(oldWidth)  / newWidth;
+        float scaleY = static_cast<float>(oldHeight) / newHeight;
+
+        for (int y = 0; y < newHeight; ++y) {
+            int srcY = std::min(static_cast<int>(y * scaleY), oldHeight - 1);
+            for (int x = 0; x < newWidth; ++x) {
+                int srcX = std::min(static_cast<int>(x * scaleX), oldWidth - 1);
+                
+                for (int c = 0; c < 3; ++c) {
+                    newImg.pixels[y][x][c] = img.pixels[srcY][srcX][c];
+                }
+            }
+        }
+
+        img = std::move(newImg);
+
+        std::cout << "Image Resized" << std::endl;
+    }
+
     // Usage guide 
     void handleHelp(const std::vector<std::string>& args) {
         if (!args.empty()){
@@ -343,7 +396,7 @@ private:
     }
 
     // Apply Multiplicative filter
-    void handleFilter(const std::vector<std::string>& args, Complex (* filter)(double, double)) {
+    void handleFilter(const std::vector<std::string>& args, FilterFunc filter) {
         std::map<std::string, bool> allowed = {{"-n", true}, {"-s", false}, {"-sx", true}, {"-sy", true}, {"-fr", true}};
         std::map<std::string, int> catches = parseVector(args, 0, allowed);
         if (catches["failed"]) return;
@@ -370,9 +423,9 @@ private:
         for(struct frame f : frames){
             for (int y = 0; y < f.y_size; y++) {
                 for (int x = 0; x < f.x_size; x++) {
-                    img.pixels[f.y + y][f.x + x][0] = img.pixels[f.y + y][f.x + x][0] * filter(x / f.x_size, y / f.y_size);
-                    img.pixels[f.y + y][f.x + x][1] = img.pixels[f.y + y][f.x + x][1] * filter(x / f.x_size, y / f.y_size);
-                    img.pixels[f.y + y][f.x + x][2] = img.pixels[f.y + y][f.x + x][2] * filter(x / f.x_size, y / f.y_size);
+                    img.pixels[f.y + y][f.x + x][0] = img.pixels[f.y + y][f.x + x][0] * filter(((double)x) / f.x_size, ((double)y) / f.y_size);
+                    img.pixels[f.y + y][f.x + x][1] = img.pixels[f.y + y][f.x + x][1] * filter(((double)x) / f.x_size, ((double)y) / f.y_size);
+                    img.pixels[f.y + y][f.x + x][2] = img.pixels[f.y + y][f.x + x][2] * filter(((double)x) / f.x_size, ((double)y) / f.y_size);
                 }
             }
         }
@@ -788,6 +841,11 @@ private:
             std::cerr << "Error: each of (n1,n2,n3) must be less than 16" << std::endl;
             return;
         }
+
+        if (n1 < 0 || n2 < 0 || n3 < 0) {
+            std::cerr << "Error: each of (n1,n2,n3) must be more than 0" << std::endl;
+            return;
+        }
         
 
         if (!currentImage[n1].isLoaded) {
@@ -839,6 +897,7 @@ private:
         std::cout << "Applied descartian function" << std::endl;
     }
 
+    // Apply matrix multiplication
     void handleMatMul(const std::vector<std::string>& args) {
         std::map<std::string, bool> allowed = {{"-n", false}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
         std::map<std::string, int> catches = parseVector(args, 1, allowed);
@@ -855,6 +914,11 @@ private:
 
         if (n1 >= N_images || n2 >= N_images || n3 >= N_images) {
             std::cerr << "Error: each of (n1,n2,n3) must be less than 16" << std::endl;
+            return;
+        }
+
+        if (n1 < 0 || n2 < 0 || n3 < 0) {
+            std::cerr << "Error: each of (n1,n2,n3) must be more than 0" << std::endl;
             return;
         }
         
@@ -1182,6 +1246,20 @@ public:
             [this](const std::vector<std::string>& args) { handleClamp(args); },
             "clamps each frame within max values",
             "clamp",
+            "-n -sx, -sy -fr"
+        );
+
+        registerCommand("resize", 
+            [this](const std::vector<std::string>& args) { handleResize(args); },
+            "resizes image to w x h",
+            "resize (w,h)",
+            "-n"
+        );
+
+        registerCommand("filter-radius", 
+            [this](const std::vector<std::string>& args) { handleFilter(args, Filter_radius); },
+            "filters with x^2 + y^2",
+            "filter-radius",
             "-n -sx, -sy -fr"
         );
     }

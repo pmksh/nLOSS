@@ -18,7 +18,7 @@ using PixelFunc         =       std::function<Triple(Triple&)>;
 using PixelFuncComplex  =       std::function<Triple(Triple&, Complex&)>;
 using TwoPixelFunc      =       std::function<Triple(Triple&, Triple&)>;
 using WarpFunc          =       std::function<std::pair<double, double>(double, double)>;
-
+using FilterFunc        =       std::function<Complex(double, double)>;
 
 const double PI = acos(-1.0);
 

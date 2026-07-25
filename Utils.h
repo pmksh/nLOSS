@@ -51,3 +51,5 @@ void levelHelper(ImageData& img, int x_s, int y_s, int x_l, int y_l);
 bool parsePair(const std::string& str, double& a, double& b);
 
 bool parseTripleInt(const std::string& str, int& a, int& b, int& c);
+
+bool parseDoubleInt(const std::string& str, int& a, int& b);

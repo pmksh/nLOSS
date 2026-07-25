@@ -133,3 +133,9 @@ bool parseTripleInt(const std::string& str, int& a, int& b, int& c) {
     // format: exactly "(int,int,int)" with no spaces
     return std::sscanf(str.c_str(), "(%d,%d,%d)", &a, &b, &c) == 3;
 }
+
+// parse double int
+bool parseDoubleInt(const std::string& str, int& a, int& b) {
+    // format: exactly "(int,int)" with no spaces
+    return std::sscanf(str.c_str(), "(%d,%d)", &a, &b) == 2;
+}

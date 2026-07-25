@@ -4,7 +4,6 @@ maybe check that weird wrong dst (+1 -> +0.5)
 add log
 add batch processing
 add ycmk
-image algebra
 improve flag parser architecture
 naming conventions
 clamp to [0,1] isnteead of (0,255)
@@ -13,4 +12,3 @@ add power n
 kernel
 edge detection
 KMM / other compression types
-add resize
