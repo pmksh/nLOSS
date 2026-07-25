@@ -838,6 +838,67 @@ private:
         
         std::cout << "Applied descartian function" << std::endl;
     }
+
+    void handleMatMul(const std::vector<std::string>& args) {
+        std::map<std::string, bool> allowed = {{"-n", false}, {"-s", false}, {"-sx", false}, {"-sy", false}, {"-fr", false}};
+        std::map<std::string, int> catches = parseVector(args, 1, allowed);
+        if (catches["failed"]) return;
+
+
+
+        int n1, n2, n3;
+
+        if (args.size() < 1 || !parseTripleInt(args[0], n1, n2, n3)) {
+            std::cerr << "Error: please input integers (n1,n2,n3)" << std::endl;
+            return;
+        }
+
+        if (n1 >= N_images || n2 >= N_images || n3 >= N_images) {
+            std::cerr << "Error: each of (n1,n2,n3) must be less than 16" << std::endl;
+            return;
+        }
+        
+
+        if (!currentImage[n1].isLoaded) {
+            std::cerr << "Error: No image loaded for n1" << std::endl;
+            return;
+        }
+
+        if (!currentImage[n2].isLoaded) {
+            std::cerr << "Error: No image loaded for n2" << std::endl;
+            return;
+        }
+
+        if (currentImage[n2].height != currentImage[n1].width) {
+            std::cerr << "Error: width of [n1] and height of [n2] do not match for matrix multiplication" << std::endl;
+            return;
+        }
+
+        int width = currentImage[n2].width;
+        int height = currentImage[n1].height;
+
+        ImageData img;
+
+        img.allocate(width, height);
+
+
+        // Perform matrix multiplication per channel
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                for (int c = 0; c < 3; ++c) {
+                    Complex sum = 0.0;
+                    for (int k = 0; k < currentImage[n1].width; ++k) {
+                        sum += currentImage[n1].pixels[i][k][c] * currentImage[n2].pixels[k][j][c];
+                    }
+                    img.pixels[i][j][c] = sum;
+                }
+            }
+        }
+
+        currentImage[n3] = img;
+        
+        std::cout << "Applied Matrix Multiplication function" << std::endl;
+    }
     
     // Parse command line into command and arguments
     std::pair<std::string, std::vector<std::string>> parseInput(const std::string& input) {
@@ -1107,6 +1168,13 @@ public:
             [this](const std::vector<std::string>& args) { handleDescartian(args, D_div); },
             "adds img[n1] / img[n2] -> img[n3]",
             "desc-div (n1,n2,n3)",
+            "NONE"
+        );
+
+        registerCommand("matmul", 
+            [this](const std::vector<std::string>& args) { handleMatMul(args); },
+            "adds img[n1] @ img[n2] -> img[n3]",
+            "matmul (n1,n2,n3)",
             "NONE"
         );
 
